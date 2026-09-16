@@ -20,11 +20,16 @@ Refs field, run name) and is how you find prior work.
 
 ### Cold-start reconstruction — do this first, every time
 
-1. **Read `.claude/references/` first** — the living cache records what has already been
+1. **Read or build the ticket dossier** — `qa/dossiers/<KEY>.md`, produced by Step 2 of
+   the `ticket-intake` skill (comments, attachments, PRs, linked tickets, each with its
+   source). **Never spawn a sub-agent without it.** A ticket description alone is not
+   enough to design tests from.
+2. **Read `.claude/references/` next** — the living cache records what has already been
    created (test sections, automation coverage, project constants).
-2. **On a cache miss, query the live systems** ({{ doc_label }}, {{ test_repo_label }},
+3. **On a cache miss, query the live systems** ({{ doc_label }}, {{ test_repo_label }},
    {{ tracker_label }}) using the ticket key as the search anchor.
-3. **If nothing exists for the ticket, spawn sub-agents** to create it (test-design → bdd).
+4. **If nothing exists for the ticket, spawn sub-agents** to create it (test-design → bdd),
+   passing `dossier_path` in the handoff contract.
 
 {{ comm_platform_label if has_comm_platform else "Slack" }} is **notify-only** — never
 use it as a reconstruction source.
@@ -33,7 +38,8 @@ use it as a reconstruction source.
 
 | Probe | Finding | Next action |
 |---|---|---|
-| {{ tracker_label }} ticket | Missing or no Acceptance Criteria | Halt → escalate to human{% if has_comm_platform %} via {{ comm_platform_label }}{% endif %} |
+| `qa/dossiers/<KEY>.md` | None found | Run `ticket-intake` Step 2 (dossier) — no sub-agent before it exists |
+| Dossier | Missing or no Acceptance Criteria, and nothing in "requirements found outside the ACs" | Halt → escalate to human{% if has_comm_platform %} via {{ comm_platform_label }}{% endif %} |
 | {{ doc_label }} TD doc (key in title) | None found | Spawn **test-design-agent** |
 | TD doc | Status = *In Review* | Spawn **bdd-agent** |
 | TD doc | Status = *Approved* | Continue to test repo probe |
