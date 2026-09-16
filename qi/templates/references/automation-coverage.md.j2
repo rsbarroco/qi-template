@@ -1,0 +1,50 @@
+# Automation Coverage — {{ project_name }}
+
+Living ledger of test case automation status. Written by automation-agent after each
+automation phase. The main agent reads this as the done-probe: when no `pending` rows
+exist for a ticket's scope, the pipeline is complete.
+
+## Format
+
+| ticket_key | case_id | status | spec_path | test_name | notes |
+|---|---|---|---|---|---|
+| `PROJ-1234` | `C000001` | `automated` | `tests/domain/feature.spec` | `Test title` | |
+| `PROJ-1234` | `C000002` | `excluded` | | | `Reason: non-deterministic timing` |
+| `PROJ-1235` | `C000003` | `pending` | | | `Automation not started` |
+
+## Status Values
+
+| Status | Meaning |
+|---|---|
+| `automated` | Spec exists, tags the case ID, passed the verification gate (lint + type-check + run) |
+| `excluded` | Case is not automatable — reason must be documented in `notes` |
+| `pending` | bdd-agent has published the case; automation-agent has not yet run |
+
+## Done-Probe
+
+The pipeline is **complete** for a ticket when:
+- Every row for that `ticket_key` has status `automated` or `excluded`.
+- No `pending` rows remain.
+
+The main agent checks this table after every automation-agent run.
+
+## Exclusion Reasons
+
+Use one of these standardised reasons in the `notes` column for `excluded` cases:
+
+| Reason | When to use |
+|---|---|
+| `non_deterministic` | Test result varies without a code change (timing, external data) |
+| `human_observer_required` | Requires a person to judge correctness (visual, audio) |
+| `hardware_dependency` | Requires physical hardware (NFC, camera, barcode scanner) |
+| `already_covered` | Another spec already covers this case (link to the spec) |
+| `failed_manual` | Case was `failed_scenario` or `blocked` in the manual run |
+| `automation_gate_failed` | Passed lint + type-check but could not achieve a green run after 3 attempts |
+| `out_of_scope` | Agreed with QA lead that this case will not be automated |
+
+## Write-Back Procedure
+
+automation-agent appends rows after each automation session. The main agent confirms
+write-back via the `writeback_targets` field in the handoff contract.
+
+Never delete rows — update the `status` column if a case changes state.

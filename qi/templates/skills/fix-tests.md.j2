@@ -1,0 +1,98 @@
+# Fix Tests — {{ project_name }}
+
+Systematic failure triage for {{ framework_label }} test suites. Follow this skill
+whenever a test is failing before assuming the app is broken or the test is wrong.
+
+## Step 0 — Classify the failure type
+
+| Signal | Type | First action |
+|---|---|---|
+| Network timeout / connection refused | Environment | Check staging health before touching any code |
+| Element not found / locator mismatch | UI change | Screenshot the page, compare with the locator |
+| Assertion failed: wrong value | Logic or bug | Read the AC — determine if the test expectation or the app is wrong |
+| Compilation / syntax error | Code | Fix the syntax, do not investigate further |
+| Flaky — passes sometimes | Timing / race | Add explicit wait for the condition, never raw sleep |
+
+## Step 1 — Check environment health first
+
+Before modifying any code:
+- Can you log in to staging with the credentials from `project-constants.md`?
+- Is the feature flag (if applicable) enabled on staging?
+- Did a recent deploy break the environment (check deploy logs)?
+
+If the environment is down, **stop** — report the environment issue, do not "fix" the test.
+
+## Step 2 — Reproduce the failure
+
+Run only the failing test in isolation:
+{% if test_framework == 'playwright' %}
+```bash
+npx playwright test tests/<file>.spec.ts --grep "case title"
+```
+{% elif test_framework == 'robot' %}
+```bash
+python -m robot --test "Test Case Name" tests/<file>.robot
+```
+{% elif test_framework == 'pytest' %}
+```bash
+python -m pytest tests/<file>.py::test_name -v
+```
+{% elif test_framework == 'junit' %}
+```bash
+./mvnw test -Dtest=ClassName#methodName
+```
+{% else %}
+Run the single failing test in your framework's single-test mode.
+{% endif %}
+
+Confirm the failure is deterministic (not a flake). If it passes in isolation, the issue
+is likely test ordering / shared state — check for global state leaks.
+
+## Step 3 — Determine: test bug or app bug?
+
+Read the AC that this test covers (from the case in {{ test_repo_label if has_test_repo else "specs/"  }}).
+- If the AC says X and the app does X but the test expects Y → **test bug** (fix the test)
+- If the AC says X and the app does Y → **app bug** (use `report-bug` skill, do not weaken the test)
+- If the AC is ambiguous → escalate to a human before making any change
+
+**Never weaken an assertion to make a test green.** A passing test that no longer
+validates the requirement is worse than a failing test.
+
+## Step 4 — Fix (test bug only)
+
+Apply the minimal change that makes the test correctly validate the AC:
+- Update locators if the UI structure changed (read the live DOM, do not guess)
+- Update the assertion value if the expected value changed per a documented product decision
+- Add explicit waits for async conditions — never raw `sleep()`
+- Extract a common setup into a fixture if duplication caused the drift
+
+## Step 5 — Verify the fix
+
+{% if test_framework == 'playwright' %}
+```bash
+npx tsc --noEmit && npx eslint tests/<file>.spec.ts && npx playwright test tests/<file>.spec.ts
+```
+{% elif test_framework == 'robot' %}
+```bash
+python -m robot --dryrun tests/ && python -m robot tests/<file>.robot
+```
+{% elif test_framework == 'pytest' %}
+```bash
+python -m flake8 tests/<file>.py && python -m pytest tests/<file>.py -v
+```
+{% else %}
+Run lint + the fixed test. Both must pass before committing.
+{% endif %}
+
+Then run the full suite (or the domain subset) to confirm no regression:
+```bash
+# Run the full test suite or the affected domain's tests
+```
+
+## Hard Rules
+
+- **Never** use `skip` or `xfail` to hide a failing test — diagnose and fix it.
+- **Never** weaken an assertion (changing `==` to `in`, removing a value check).
+- **Never** assume an app bug without manually reproducing it in the browser.
+- **Always** check the environment before modifying code.
+- **Always** run lint + type-check + the test before declaring the fix complete.

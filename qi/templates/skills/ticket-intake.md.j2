@@ -239,6 +239,10 @@ After every automated case:
    - Staging pass → **Pending Prod Deployment** (or your team's equivalent)
 {% elif tracker == 'github_issues' %}
    - Add `qa-passed-dev` / `qa-passed-staging` labels as appropriate
+{% elif tracker == 'linear' %}
+   - Move the issue to `QA Passed` state (or your team's equivalent workflow step)
+{% elif tracker == 'azure_devops' %}
+   - Transition the work item to `QA Passed` or `Ready for Release` state
 {% else %}
    - Move the ticket to the appropriate "QA Passed" state in {{ tracker_label }}
 {% endif %}

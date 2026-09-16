@@ -1,0 +1,37 @@
+# Watch Candidates — {{ project_name }}
+
+Log of recurring patterns, flaky behaviours, or systemic risks observed during QA
+sessions. These are not bugs — they are candidates for a dedicated investigation or
+a new automated regression guard.
+
+## Purpose
+
+When the `feedback-loop` rule identifies a recurring pattern worth tracking, log it here.
+Review this backlog at the start of each sprint. Candidates that remain unresolved for
+two or more sprints should be escalated to a tracked issue in {{ tracker_label if tracker != 'none' else "the project tracker" }}.
+
+## Format
+
+| Date | Observed pattern | Frequency | Risk | Proposed guard | Status |
+|---|---|---|---|---|---|
+| `YYYY-MM-DD` | `<Description of what was observed>` | `N times` | `high / medium / low` | `<What test or check would catch this>` | `watching / investigating / resolved` |
+
+## Active Candidates
+
+<!-- Add rows here as patterns are observed -->
+
+## Resolved
+
+<!-- Move rows here when the pattern is addressed (regression guard added or root cause fixed) -->
+
+## Instructions for AI Agents
+
+When you notice a recurring pattern during a QA session:
+1. Add a row to the **Active Candidates** table above.
+2. Set `status` to `watching`.
+3. Include enough detail that another agent (or human) can identify the same pattern independently.
+4. Do **not** file a tracker issue immediately — observe for at least two occurrences first.
+
+When a candidate has a regression guard implemented (automated test or monitoring alert):
+1. Move its row to **Resolved**.
+2. Add the spec path or monitoring rule in the `Proposed guard` column.

@@ -1,0 +1,99 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_USER     = credentials('qa-app-user')
+        APP_PASSWORD = credentials('qa-app-password')
+{% if has_sql %}
+{% for db in sql_dbs %}
+        {{ db | upper }}_URL = credentials('qa-{{ db }}-url')
+{% endfor %}
+{% endif %}
+{% if has_nosql %}
+{% for db in nosql_dbs %}
+        {{ db | upper }}_URI = credentials('qa-{{ db }}-uri')
+{% endfor %}
+{% endif %}
+{% if has_comm_platform %}
+        COMM_WEBHOOK = credentials('qa-{{ comm_platform }}-webhook')
+{% endif %}
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+    }
+
+    stages {
+        stage('Setup') {
+            steps {
+                sh 'python -m pip install -r requirements.txt'
+{% if ui_web and test_framework == 'playwright' %}
+                sh 'python -m playwright install chromium'
+{% endif %}
+            }
+        }
+
+        stage('Lint') {
+            steps {
+{% if test_framework == 'playwright' %}
+                sh 'npx eslint .'
+{% elif test_framework == 'robot' %}
+                sh 'python -m rflint tests/'
+{% elif test_framework == 'pytest' %}
+                sh 'python -m flake8 tests/'
+{% else %}
+                sh 'echo "Add lint command for your framework here"'
+{% endif %}
+            }
+        }
+
+        stage('Test') {
+            steps {
+{% if test_framework == 'playwright' %}
+                sh 'npx playwright test'
+{% elif test_framework == 'robot' %}
+                sh 'python -m robot tests/'
+{% elif test_framework == 'pytest' %}
+                sh 'python -m pytest tests/ -v --tb=short'
+{% elif test_framework == 'junit' %}
+                sh './mvnw verify'
+{% else %}
+                sh 'echo "Add your framework test command here"'
+{% endif %}
+            }
+        }
+
+        stage('Coverage Gate') {
+            steps {
+                sh 'python scripts/coverage_report.py --check'
+            }
+        }
+    }
+
+    post {
+        always {
+{% if test_framework == 'playwright' %}
+            publishHTML(target: [
+                allowMissing: true,
+                alwaysLinkToLastBuild: true,
+                keepAll: true,
+                reportDir: 'playwright-report',
+                reportFiles: 'index.html',
+                reportName: 'Playwright Report'
+            ])
+{% elif test_framework == 'robot' %}
+            publishHTML(target: [
+                allowMissing: true,
+                alwaysLinkToLastBuild: true,
+                reportDir: '.',
+                reportFiles: 'report.html',
+                reportName: 'Robot Report'
+            ])
+{% endif %}
+        }
+        failure {
+            echo 'Tests failed — check the report for details.'
+        }
+    }
+}

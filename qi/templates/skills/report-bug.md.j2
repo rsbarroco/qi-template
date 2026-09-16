@@ -1,0 +1,93 @@
+# Report Bug — {{ project_name }}
+
+Structured bug reporting protocol. Facts only — no speculation, no fix suggestions.
+Use this skill when a `failed_scenario` verdict is recorded during manual execution,
+or when visual debugging confirms an app defect.
+
+## When to invoke
+
+- A test case returns `failed_scenario` (the AC is correct; the app is wrong)
+- Manual reproduction confirms the defect exists independent of the test
+- A regression is found in an existing feature during a QA session
+
+**Do NOT invoke before manual reproduction.** A failing assertion alone is not a bug.
+
+## Bug Report Format
+
+{% if tracker == 'jira' %}
+File as a **Bug** issue type in {{ tracker_label }} project `{{ tracker_project_key }}`.
+{% elif tracker == 'github_issues' %}
+File as a GitHub Issue in `{{ tracker_project_key }}` with label `bug`.
+{% elif tracker == 'linear' %}
+File as a Bug type in Linear team `{{ tracker_project_key }}`.
+{% elif tracker == 'azure_devops' %}
+File as a Bug work item in Azure DevOps project `{{ tracker_project_key }}`.
+{% else %}
+File the bug in {{ tracker_label }} using the standard Bug type.
+{% endif %}
+
+### Required fields
+
+**Title**: `[BUG] <Feature>: <what is wrong> — observed on staging`
+
+**Description**:
+
+```
+## Summary
+One sentence describing what is broken and what the user impact is.
+
+## Steps to Reproduce
+1. Log in as <persona> at <staging URL>
+2. Navigate to <location>
+3. Perform <action>
+4. Observe <result>
+
+## Expected Result
+[Copy the expected result from the test case or AC verbatim]
+
+## Actual Result
+[Describe exactly what happened — include the specific value, message, or behaviour]
+
+## Evidence
+- Screenshot: [attach]
+{% if ui_web %}
+- Network request: [method, URL, status code, response body if relevant]
+- Browser console errors: [paste if present]
+{% endif %}
+{% if has_sql %}
+- DB state: [query and result if relevant]
+{% endif %}
+{% if has_cloud %}
+- {{ cloud_label }} log: [log line and timestamp if relevant]
+{% endif %}
+
+## Environment
+- Environment: staging
+- Date/time of reproduction: [timestamp]
+- Browser / platform: [if UI bug]
+
+## Linked ticket
+[Link to the original feature ticket that this regression was found in]
+```
+
+### What NOT to include
+
+- Fix suggestions ("it's probably the X component")
+- Speculation about root cause
+- References to test code (the bug report is about the app, not the test)
+- Workarounds (document those separately if needed)
+
+## After Filing
+
+1. Link the bug to the original feature ticket in {{ tracker_label }}.
+2. Record the bug ID in the `actions_taken` list of the handoff contract.
+3. Mark the test case as `failed_scenario` in {{ test_repo_label if has_test_repo else "the run record" }}.
+4. Do **not** modify the test to skip or ignore the failing case — the test is correct.
+5. Route `routing.target = "bug_filed"` in the handoff contract — the main agent decides next steps.
+
+## Hard Rules
+
+- **Never** file a bug without manual reproduction.
+- **Never** include fix suggestions — that is the developer's job.
+- **Never** weaken or skip the test case that found the bug — it stays as a sentinel.
+- Evidence (screenshot, log, network) is mandatory — a text description alone is not enough.

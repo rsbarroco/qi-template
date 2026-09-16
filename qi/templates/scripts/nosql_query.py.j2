@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+"""
+Read-only NoSQL query helper for {{ project_name }}.
+
+Usage:
+  python scripts/nosql_query.py --db <db_type> --collection <name> --query '{"field": "value"}'
+
+Safety rules:
+  - Read-only — no insert, update, or delete operations.
+  - Never log or print documents that contain PII — stop and report.
+  - Use only against dev and staging environments.
+"""
+import argparse
+import json
+import os
+import sys
+{% if 'mongodb' in nosql_dbs %}
+from pymongo import MongoClient
+{% endif %}
+{% if 'redis' in nosql_dbs %}
+import redis
+{% endif %}
+{% if 'dynamodb' in nosql_dbs %}
+import boto3
+{% endif %}
+{% if 'firestore' in nosql_dbs %}
+from google.cloud import firestore
+{% endif %}
+
+
+def _check_env(var: str) -> str:
+    val = os.getenv(var)
+    if not val:
+        print(f"ERROR: environment variable {var} is not set", file=sys.stderr)
+        sys.exit(1)
+    return val
+{% if 'mongodb' in nosql_dbs %}
+
+
+def query_mongodb(collection: str, query: dict, limit: int) -> list[dict]:
+    uri = _check_env("MONGODB_URI")
+    client = MongoClient(uri)
+    db_name = _check_env("MONGODB_DB")
+    db = client[db_name]
+    results = list(db[collection].find(query).limit(limit))
+    for doc in results:
+        doc["_id"] = str(doc["_id"])   # make ObjectId serialisable
+    return results
+{% endif %}
+{% if 'redis' in nosql_dbs %}
+
+
+def query_redis(key: str) -> str | None:
+    host = _check_env("REDIS_HOST")
+    port = int(os.getenv("REDIS_PORT", "6379"))
+    r = redis.Redis(host=host, port=port, decode_responses=True)
+    value = r.get(key)
+    ttl = r.ttl(key)
+    return {"key": key, "value": value, "ttl_seconds": ttl}
+{% endif %}
+{% if 'dynamodb' in nosql_dbs %}
+
+
+def query_dynamodb(table: str, pk: str, sk: str | None = None) -> dict | None:
+    region = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+    client = boto3.client("dynamodb", region_name=region)
+    key = {"PK": {"S": pk}}
+    if sk:
+        key["SK"] = {"S": sk}
+    response = client.get_item(
+        TableName=table,
+        Key=key,
+        ConsistentRead=True,
+    )
+    return response.get("Item")
+{% endif %}
+{% if 'firestore' in nosql_dbs %}
+
+
+def query_firestore(collection: str, doc_id: str) -> dict | None:
+    client = firestore.Client()
+    doc = client.collection(collection).document(doc_id).get()
+    return doc.to_dict() if doc.exists else None
+{% endif %}
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Read-only NoSQL query helper")
+    parser.add_argument("--db", required=True,
+                        choices={{ nosql_dbs | tojson }},
+                        help="Database type")
+    parser.add_argument("--collection", "--table", dest="collection",
+                        help="Collection / table / key name")
+    parser.add_argument("--query", default="{}",
+                        help="JSON query filter (MongoDB) or primary key (DynamoDB/Firestore)")
+    parser.add_argument("--limit", type=int, default=20,
+                        help="Maximum results to return (default: 20)")
+    args = parser.parse_args()
+
+    query = json.loads(args.query)
+    results = None
+
+{% if 'mongodb' in nosql_dbs %}
+    if args.db == "mongodb":
+        results = query_mongodb(args.collection, query, args.limit)
+{% endif %}
+{% if 'redis' in nosql_dbs %}
+    if args.db == "redis":
+        results = query_redis(args.collection)
+{% endif %}
+{% if 'dynamodb' in nosql_dbs %}
+    if args.db == "dynamodb":
+        pk = query.get("PK", args.collection)
+        sk = query.get("SK")
+        results = query_dynamodb(args.collection, pk, sk)
+{% endif %}
+{% if 'firestore' in nosql_dbs %}
+    if args.db == "firestore":
+        doc_id = query.get("id", args.collection)
+        results = query_firestore(args.collection, doc_id)
+{% endif %}
+
+    if results is None:
+        print("No results or unsupported db type.", file=sys.stderr)
+        sys.exit(1)
+
+    print(json.dumps(results, indent=2, default=str))
+
+
+if __name__ == "__main__":
+    main()

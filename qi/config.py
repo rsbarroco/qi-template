@@ -11,6 +11,14 @@ class Config:
     tracker_project_key: str = ""    # e.g. "PROJ", "my-org/my-repo"
     doc_platform: str = "none"       # confluence | notion | github_wiki | none
 
+    # Test case repository
+    test_repo: str = "none"          # testrail | zephyr | xray | azure_test_plans | local_files | none
+    test_repo_project_key: str = ""  # project/suite ID in the test management system
+
+    # Communication
+    comm_platform: str = "none"      # slack | teams | discord | none
+    comm_platform_channel: str = ""  # channel name or ID
+
     # Databases
     sql_dbs: list[str] = field(default_factory=list)    # postgres | mysql | sqlite | mssql
     nosql_dbs: list[str] = field(default_factory=list)  # mongodb | redis | dynamodb | firestore
@@ -21,7 +29,7 @@ class Config:
     ui_mobile_android: bool = False
     ui_mobile_framework: str = "appium"  # appium | detox | espresso_xcuitest
 
-    # Test framework (advisory — the template is agnostic, but README uses it)
+    # Test framework (determines what specs automation-agent generates)
     test_framework: str = "none"     # robot | playwright | cypress | jest | webdriverio | custom | none
 
     # Performance testing
@@ -32,7 +40,8 @@ class Config:
     queues: list[str] = field(default_factory=list)  # sqs | pubsub | kafka | rabbitmq
     ci: str = "none"                 # github_actions | gitlab_ci | jenkins | none
 
-    # Derived helpers
+    # ---------- Derived helpers ----------
+
     @property
     def has_sql(self) -> bool:
         return bool(self.sql_dbs)
@@ -60,3 +69,22 @@ class Config:
     @property
     def has_performance(self) -> bool:
         return self.performance != "none"
+
+    @property
+    def has_test_repo(self) -> bool:
+        return self.test_repo != "none"
+
+    @property
+    def has_comm_platform(self) -> bool:
+        return self.comm_platform != "none"
+
+    @property
+    def has_pipeline(self) -> bool:
+        """True when the full 4-phase QA agent pipeline is warranted.
+
+        Requires a tracker (to get tickets) plus at least one of: a doc platform
+        (to publish Test Design docs) or a test repo (to publish cases).
+        """
+        return self.tracker != "none" and (
+            self.doc_platform != "none" or self.test_repo != "none"
+        )

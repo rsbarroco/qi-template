@@ -42,16 +42,55 @@ def ask() -> Config:
             "Linear team identifier?",
             validate=lambda v: bool(v.strip()) or "Required",
         ).ask()
+    elif cfg.tracker == "azure_devops":
+        cfg.tracker_project_key = questionary.text(
+            "Azure DevOps project name?",
+            validate=lambda v: bool(v.strip()) or "Required",
+        ).ask()
 
     cfg.doc_platform = questionary.select(
-        "Documentation platform?",
+        "Documentation platform (for Test Design Specifications)?",
         choices=[
             questionary.Choice("Confluence", "confluence"),
             questionary.Choice("Notion", "notion"),
             questionary.Choice("GitHub Wiki", "github_wiki"),
+            questionary.Choice("None / local files", "none"),
+        ],
+    ).ask()
+
+    cfg.test_repo = questionary.select(
+        "Test case repository (where test cases are stored and tracked)?",
+        choices=[
+            questionary.Choice("TestRail", "testrail"),
+            questionary.Choice("Zephyr Scale (Jira)", "zephyr"),
+            questionary.Choice("Xray (Jira)", "xray"),
+            questionary.Choice("Azure Test Plans", "azure_test_plans"),
+            questionary.Choice("Local Markdown files", "local_files"),
             questionary.Choice("None", "none"),
         ],
     ).ask()
+
+    if cfg.test_repo not in ("local_files", "none"):
+        cfg.test_repo_project_key = questionary.text(
+            "Test repo project / suite ID (e.g. '2' for TestRail project, team key for Zephyr)?",
+            validate=lambda v: bool(v.strip()) or "Required",
+        ).ask()
+
+    cfg.comm_platform = questionary.select(
+        "Team communication platform (for QA notifications)?",
+        choices=[
+            questionary.Choice("Slack", "slack"),
+            questionary.Choice("Microsoft Teams", "teams"),
+            questionary.Choice("Discord", "discord"),
+            questionary.Choice("None", "none"),
+        ],
+    ).ask()
+
+    if cfg.comm_platform != "none":
+        cfg.comm_platform_channel = questionary.text(
+            "Default channel name / ID for QA notifications?",
+            validate=lambda v: bool(v.strip()) or "Required",
+        ).ask()
 
     sql_choices = questionary.checkbox(
         "SQL databases? (space to select, enter to confirm)",
@@ -85,13 +124,15 @@ def ask() -> Config:
         ).ask()
 
     cfg.test_framework = questionary.select(
-        "Primary test framework?",
+        "Primary test automation framework?",
         choices=[
+            questionary.Choice("Playwright (TypeScript / Python)", "playwright"),
             questionary.Choice("Robot Framework", "robot"),
-            questionary.Choice("Playwright (Python/JS)", "playwright"),
+            questionary.Choice("pytest", "pytest"),
             questionary.Choice("WebdriverIO", "webdriverio"),
             questionary.Choice("Cypress", "cypress"),
             questionary.Choice("Jest / Vitest", "jest"),
+            questionary.Choice("JUnit / TestNG (Java / Kotlin)", "junit"),
             questionary.Choice("Custom / other", "custom"),
             questionary.Choice("None / TBD", "none"),
         ],

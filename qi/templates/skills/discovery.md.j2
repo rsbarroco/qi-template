@@ -1,0 +1,87 @@
+# Discovery — {{ project_name }}
+
+Read-only intake step. Fetches a ticket from {{ tracker_label }}, parses its Acceptance
+Criteria into a structured list, and surfaces any prior Test Design docs or test cases.
+Outputs a typed `discovery_payload` for downstream skills and agents.
+
+## When to Invoke
+
+- At the start of every QA session for a new ticket
+- Before test-design-agent runs (the main agent may run this first to confirm preconditions)
+- When a human asks "what's the current state of ticket PROJ-1234?"
+
+## Steps
+
+### 1. Fetch the ticket
+
+{% if tracker == 'jira' %}
+```
+getJiraIssue({ key: "{{ tracker_project_key }}-NNNN" })
+```
+Read: title, description, Acceptance Criteria field, labels, assignee, linked issues.
+{% elif tracker == 'github_issues' %}
+```
+GET /repos/{{ tracker_project_key }}/issues/NNN
+```
+Read: title, body, labels, linked PRs. Parse AC bullets from the issue body.
+{% elif tracker == 'linear' %}
+Use the Linear API to fetch the issue by identifier.
+Read: title, description, sub-issues. Parse AC bullets from the description.
+{% elif tracker == 'azure_devops' %}
+Use the Azure DevOps API to fetch the work item from project `{{ tracker_project_key }}`.
+Read: title, description, acceptance criteria field, linked work items.
+{% else %}
+Fetch the ticket from {{ tracker_label }} using its native API.
+Read the title, description, and acceptance criteria.
+{% endif %}
+
+### 2. Parse Acceptance Criteria
+
+Extract every AC bullet as a structured list:
+```json
+[
+  { "id": "AC-1", "text": "...", "type": "functional | constraint | non-functional" }
+]
+```
+If no ACs are found: set `has_acs = false` and surface as a blocker.
+
+### 3. Search for prior work
+
+{% if doc_platform == 'confluence' %}
+Search Confluence for pages whose title contains the ticket key.
+{% elif doc_platform == 'notion' %}
+Search the QA Test Designs database for pages tagged with the ticket key.
+{% elif doc_platform == 'github_wiki' %}
+Search the `{{ tracker_project_key }}` Wiki for pages containing the ticket key.
+{% else %}
+Search `.qa/designs/` for files named `<ticket-key>*.md`.
+{% endif %}
+
+{% if has_test_repo %}
+Search {{ test_repo_label }} for cases where Refs contains the ticket key.
+{% endif %}
+
+Read `.claude/references/automation-coverage.md` for any existing automation rows for this ticket.
+
+### 4. Output the discovery payload
+
+```json
+{
+  "ticket_key":     "string",
+  "title":          "string",
+  "has_acs":        true,
+  "acs":            [{ "id": "AC-1", "text": "...", "type": "..." }],
+  "td_doc_id":      "string | null",
+  "td_status":      "In Review | Approved | null",
+  "test_case_ids":  ["list | empty"],
+  "test_run_id":    "string | null",
+  "automation_rows": ["list of case IDs already in automation-coverage.md"],
+  "derived_phase":  "no_td | bdd | manual | automation | done | done_simple"
+}
+```
+
+## Hard Rules
+
+- Read-only — discovery never writes to any system.
+- If `has_acs = false`, surface it immediately and do not advance the pipeline.
+- The `derived_phase` field is advisory — the main agent makes the final routing decision.

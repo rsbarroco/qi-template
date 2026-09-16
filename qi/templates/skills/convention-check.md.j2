@@ -1,0 +1,91 @@
+# Convention Check — {{ project_name }}
+
+Run this skill after every sub-agent returns. It validates three artifact types and
+returns a structured finding list. It **never auto-edits** — findings go back to the
+producing agent for correction.
+
+## When to Invoke
+
+- After **test-design-agent** produces a TD doc (check TD rules)
+- After **bdd-agent** produces test cases (check TC rules + linkage rules)
+- After **automation-agent** produces specs (check linkage rules)
+- On demand: `convention-check <target>` where target is `td | tc | linkage | all`
+
+## TD Rules — Test Design Specifications
+
+| ID | Rule | Severity |
+|---|---|---|
+| TD-000 | Complexity gate applied: simple features → QA brief, complex → full TD doc | critical |
+| TD-001 | Page title contains the ticket key (e.g. `PROJ-1234`) | critical |
+| TD-002 | Status field is set to `In Review` (before bdd-agent) or `Approved` (after) | critical |
+| TD-003 | No empty sections — omit sections that are genuinely N/A | critical |
+| TD-004 | Blockers & Open Questions section appears first (if non-empty) | major |
+| TD-005 | Coverage Map table is present and has one row per testable requirement | critical |
+| TD-006 | Each Coverage Map row has: AC ref, scenario description, risk tags, case ID (after bdd) | major |
+| TD-007 | Risk Map uses only approved risk tags: `data_integrity | rbac | accessibility | third_party | performance | i18n | ac_change` | major |
+| TD-008 | Scope section distinguishes in-scope from out-of-scope explicitly | minor |
+| TD-009 | No speculative language ("might", "should work", "probably") | major |
+| TD-010 | Preconditions are concrete (named persona, named data) — not abstract | major |
+| TD-011 | Data Requirements section present when test data provisioning is needed | major |
+| TD-012 | No duplicate scenario rows | major |
+| TD-013 | Doc is lean — no sections longer than necessary to cover the feature | minor |
+| TD-014 | No copy-paste boilerplate or placeholder text | minor |
+| TD-015 | Revision History present only if the team uses it — never empty | minor |
+
+**critical violations**: must be fixed before the pipeline advances.
+**major violations**: must be fixed before the TD is promoted to Approved.
+**minor violations**: fix on next edit; do not block the pipeline.
+
+## TC Rules — Test Cases (in {{ test_repo_label }})
+
+| ID | Rule | Severity |
+|---|---|---|
+| TC-001 | Case title follows format: `[SCENARIO TYPE] Descriptive title in plain language` | critical |
+| TC-002 | Case title does not contain the ticket key (traceability goes in the Refs field) | critical |
+| TC-003 | All 6 label dimensions set: `type | domain | scope | priority | automation_status | environment` | critical |
+| TC-004 | Refs / traceability field contains the ticket key | critical |
+| TC-005 | Steps are deterministic — no "may", "should", "might" | major |
+| TC-006 | Expected results are specific — no "works correctly", "as expected" | major |
+| TC-007 | Each case exercises exactly one behaviour (one AC row = one case) | major |
+| TC-008 | Case is placed in the correct section path (verified against `.claude/references/test-sections.md`) | major |
+| TC-009 | `automation_status` label is `manual` (before automation-agent runs) | minor |
+
+## LNK Rules — Linkage & Traceability
+
+| ID | Rule | Severity |
+|---|---|---|
+| LNK-001 | Ticket key appears in TD doc title | critical |
+| LNK-002 | Ticket key appears in Refs field of every case | critical |
+| LNK-003 | Ticket key appears in the test run / cycle name | critical |
+| LNK-004 | Every spec file annotated by automation-agent has the {{ test_repo_label }} case ID tag | critical |
+| LNK-005 | `automation-coverage.md` has a row for every case in the coverage map | critical |
+| LNK-006 | No `pending` rows in `automation-coverage.md` for this ticket (done-probe) | info |
+| LNK-007 | QA brief (simple path) has been written to `.qa/designs/<ticket-key>-brief.md` | critical |
+| LNK-008 | Section path written back to `.claude/references/test-sections.md` after bdd-agent | critical |
+
+## Output Format
+
+```json
+{
+  "target": "td | tc | linkage | all",
+  "ticket_key": "string",
+  "findings": [
+    {
+      "id": "TD-003",
+      "severity": "critical | major | minor | info",
+      "description": "plain-language description of the violation",
+      "location": "section name / case ID / file path"
+    }
+  ],
+  "critical_count": 0,
+  "major_count": 0,
+  "summary": "PASS | FAIL (N critical, M major)"
+}
+```
+
+## Routing After Check
+
+- `critical_count > 0` → re-dispatch the producing agent with the full finding list.
+- `critical_count == 0 AND major_count > 0` → re-dispatch if the agent has not yet
+  been dispatched twice for this phase; otherwise log the majors and advance.
+- `critical_count == 0 AND major_count == 0` → advance the pipeline.
