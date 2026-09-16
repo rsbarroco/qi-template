@@ -20,7 +20,7 @@ class Config:
     comm_platform_channel: str = ""  # channel name or ID
 
     # Databases
-    sql_dbs: list[str] = field(default_factory=list)    # postgres | mysql | sqlite | mssql
+    sql_dbs: list[str] = field(default_factory=list)    # postgresql | mysql | sqlite | mssql
     nosql_dbs: list[str] = field(default_factory=list)  # mongodb | redis | dynamodb | firestore
 
     # UI / mobile

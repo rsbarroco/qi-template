@@ -3,6 +3,12 @@ import questionary
 from qi.config import Config
 
 
+# Menu label -> the value templates branch on. Keep in sync with Config's docstrings and
+# the `{% if 'mssql' in sql_dbs %}`-style checks in qi/templates/.
+SQL_VALUES = {"PostgreSQL": "postgresql", "MySQL": "mysql", "SQLite": "sqlite", "MS SQL Server": "mssql"}
+QUEUE_VALUES = {"SQS": "sqs", "Pub/Sub": "pubsub", "Kafka": "kafka", "RabbitMQ": "rabbitmq"}
+
+
 def _slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
@@ -94,9 +100,9 @@ def ask() -> Config:
 
     sql_choices = questionary.checkbox(
         "SQL databases? (space to select, enter to confirm)",
-        choices=["PostgreSQL", "MySQL", "SQLite", "MS SQL Server"],
+        choices=list(SQL_VALUES),
     ).ask()
-    cfg.sql_dbs = [c.lower().replace(" ", "_") for c in (sql_choices or [])]
+    cfg.sql_dbs = [SQL_VALUES[c] for c in (sql_choices or [])]
 
     nosql_choices = questionary.checkbox(
         "NoSQL databases?",
@@ -162,9 +168,9 @@ def ask() -> Config:
 
     queue_choices = questionary.checkbox(
         "Async queues / message brokers?",
-        choices=["SQS", "Pub/Sub", "Kafka", "RabbitMQ"],
+        choices=list(QUEUE_VALUES),
     ).ask()
-    cfg.queues = [c.lower().replace("/", "_") for c in (queue_choices or [])]
+    cfg.queues = [QUEUE_VALUES[c] for c in (queue_choices or [])]
 
     cfg.ci = questionary.select(
         "CI/CD platform?",

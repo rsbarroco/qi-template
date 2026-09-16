@@ -106,6 +106,13 @@ def cmd_basis(args: argparse.Namespace) -> None:
 
 def cmd_count(args: argparse.Namespace) -> None:
     data = _load(args.ticket)
+    if args.automated < args.manual and not args.reason.strip():
+        print(
+            f"[qa_track] {args.ticket}: automated ({args.automated}) < manual ({args.manual}) "
+            "requires --reason explaining why the remainder was not automated.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     if not data:
         print(f"[qa_track] ERROR: no record for {args.ticket}. Run `start` first.", file=sys.stderr)
         sys.exit(1)
