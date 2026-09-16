@@ -8,7 +8,6 @@ from typer.testing import CliRunner
 
 from qi import cli
 from qi.config import Config
-from qi.generator import generate
 
 scenarios("scaffold.feature")
 
@@ -37,13 +36,6 @@ def android_detox():
     return Config(project_name="App", project_slug="app", ui_mobile_android=True, ui_mobile_framework="detox")
 
 
-@when("I scaffold the project", target_fixture="project")
-def scaffold(config, tmp_path) -> Path:
-    target = tmp_path / config.project_slug
-    generate(config, target)
-    return target
-
-
 @when("I run qi with --dry-run", target_fixture="dry_run")
 def run_dry(config, tmp_path, monkeypatch):
     monkeypatch.setattr(cli, "ask", lambda: config)
@@ -56,22 +48,6 @@ def run_dry(config, tmp_path, monkeypatch):
 @then(parsers.parse('CLAUDE.md names "{tracker}" as the task tracker'))
 def claude_names_tracker(project, tracker):
     assert re.search(rf"Task tracker.*\b{re.escape(tracker)}\b", (project / "CLAUDE.md").read_text())
-
-
-@then(parsers.parse('the skills include "{a}" and "{b}"'))
-def skills_include_two(project, a, b):
-    for name in (a, b):
-        assert (project / ".claude/skills" / f"{name}.md").exists(), name
-
-
-@then(parsers.parse('the skills include "{a}"'))
-def skills_include_one(project, a):
-    assert (project / ".claude/skills" / f"{a}.md").exists(), a
-
-
-@then(parsers.parse('the skills do not include "{name}"'))
-def skills_exclude(project, name):
-    assert not (project / ".claude/skills" / f"{name}.md").exists()
 
 
 @then("no generated file contains unrendered template markup")

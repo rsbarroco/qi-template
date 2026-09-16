@@ -11,6 +11,7 @@ Every sub-agent receives and produces a JSON object with these fields:
 ```json
 {
   "ticket_key":      "string  — REQUIRED. The tracker ticket identifier (e.g. PROJ-1234).",
+  "dossier_path":    "string  — REQUIRED. qa/dossiers/<KEY>.md from ticket-intake Step 2; the fetched state of the ticket every phase reads instead of re-fetching.",
   "td_doc_id":       "string  — OPTIONAL. ID or path of the TD doc. Required by: bdd-agent, manual-agent, automation-agent.",
   "test_section_id": "string  — OPTIONAL. Section/folder ID in {{ test_repo_label }}. Required by: manual-agent, automation-agent.",
   "test_case_ids":   ["array  — OPTIONAL. Case IDs from {{ test_repo_label }}. Required by: manual-agent, automation-agent."],
@@ -28,6 +29,8 @@ Every sub-agent receives and produces a JSON object with these fields:
 **The main agent runs these checks after every sub-agent returns:**
 
 1. `ticket_key` is present and non-empty.
+1b. `dossier_path` points at an existing file whose title contains `ticket_key`. A
+    contract without a dossier is rejected — no phase runs on a description-only read.
 2. `actions_taken` is a non-empty array.
 3. `routing.target` is one of the allowed values.
 4. If `routing.target` is `bdd`, then `td_doc_id` is present.

@@ -26,6 +26,7 @@ manual verdict is routed back here).
 ```json
 {
   "ticket_key":     "string  — the tracker ticket identifier, e.g. PROJ-1234",
+  "dossier_path":   "string  — REQUIRED. qa/dossiers/<KEY>.md written by ticket-intake Step 2",
   "derived_status": "string  — 'no_td' | 'rework' (with failed_requirements list)"
 }
 ```
@@ -37,7 +38,25 @@ manual verdict is routed back here).
 Read `.claude/references/project-constants.md` to load staging URL, credential env vars,
 and any project-specific preconditions.
 
-### Step 2 — Fetch the ticket
+### Step 2 — Read the dossier (the ticket, fully)
+
+Open `dossier_path` (`qa/dossiers/<KEY>.md`). It is the fetched state of the ticket:
+acceptance criteria verbatim, comments, attachments (opened, observed vs inferred),
+pull requests with the behaviour their diffs revealed, linked tickets, and the two lists
+that matter most here — **requirements found outside the ACs** and **open questions**.
+
+- If the dossier is missing, **halt** and return `routing.target = "test_design"` with
+  `actions_taken` noting "dossier missing"; the main agent runs `ticket-intake` Step 2
+  first. Never fetch the ticket yourself as a substitute — a description-only read is
+  exactly what the dossier gate exists to prevent.
+- If the dossier has no acceptance criteria and no requirements found outside the ACs,
+  halt and escalate to a human{% if has_comm_platform %} via {{ comm_platform_label }} `{{ comm_platform_channel }}`{% endif %}.
+- Every requirement found outside the ACs is a **candidate requirement** in the Test
+  Design doc, marked with its source, for the reviewer to accept or drop explicitly.
+- Every open question becomes a **blocker or assumption** in the TD doc, never a silent
+  decision.
+
+Only refresh from the tracker when the dossier is older than the ticket's last update:
 
 {% if tracker == 'jira' %}
 Use the Jira MCP to fetch `{{ tracker_project_key }}-NNNN`:
