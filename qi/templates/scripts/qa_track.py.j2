@@ -20,7 +20,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-TRACKER_DIR = Path.home() / ".config" / "qi-activity"
+TRACKER_DIR = Path(os.environ.get("QI_ACTIVITY_DIR") or Path.home() / ".config" / "qi-activity")
 TRACKER_DIR.mkdir(parents=True, exist_ok=True)
 
 

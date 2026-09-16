@@ -1,0 +1,19 @@
+{
+  "id": "ambiguous-ticket",
+  "query": "Take ticket SHOP-103 (tickets/SHOP-103.md), sprint 26-09, and prepare the test cases.",
+  "expected_behavior": [
+    "Opens the tracking record",
+    "Notices the ticket has no acceptance criteria and does not invent any",
+    "Asks the QA engineer / PO concrete clarifying questions instead of producing Gherkin scenarios for imagined behaviour",
+    "Does not create tests, specs or coverage changes",
+    "If it drafts anything, it is explicitly marked as assumptions needing confirmation, not as the ticket's ACs"
+  ],
+  "graders": [
+    { "type": "file_exists", "name": "tracking record opened", "path": "$ACTIVITY/SHOP-103.json" },
+    { "type": "answer_matches", "name": "asks for clarification", "pattern": "(clarif|\\?|needs? (the )?(PO|product)|acceptance criteria (are|is) missing|no acceptance criteria)" },
+    { "type": "answer_not_matches", "name": "does not present invented ACs as given", "pattern": "^\\s*-?\\s*AC[1-9]\\s*[:—-]" },
+    { "type": "dir_unchanged", "name": "tests untouched", "path": "tests" },
+    { "type": "dir_unchanged", "name": "specs untouched", "path": "specs" },
+    { "type": "file_absent", "name": "no invented spec", "path": "specs/wishlist.md" }
+  ]
+}
