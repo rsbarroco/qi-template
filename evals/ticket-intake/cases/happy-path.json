@@ -3,19 +3,58 @@
   "query": "Please take ticket SHOP-101 (see tickets/SHOP-101.md). Sprint 26-09.",
   "expected_behavior": [
     "Opens the tracking record first: scripts/qa_track.py start with --ticket SHOP-101 --sprint 26-09 --basis ac",
-    "Reads specs/checkout.md and tests/ and classifies each of the four ACs as covered / partial / not covered (all four should be not covered)",
+    "Builds qa/dossiers/SHOP-101.md, then reads specs/checkout.md and tests/ and classifies each AC (AC1 is partially covered by the test PR #42 adds; AC2-AC4 are not covered)",
     "Writes one Gherkin scenario per AC as a draft and shows it in the answer",
     "STOPS at the approval gate and asks the QA engineer to approve; does not create test files, does not edit specs or COVERAGE.md",
     "The answer shows the inventory as a table, not as prose claims"
   ],
   "graders": [
-    { "type": "file_exists", "name": "tracking record opened", "path": "$ACTIVITY/SHOP-101.json" },
-    { "type": "json_field_equals", "name": "sprint recorded", "path": "$ACTIVITY/SHOP-101.json", "field": "sprint", "value": "26-09" },
-    { "type": "answer_matches", "name": "gherkin draft present", "pattern": "^\\s*(Scenario|Cenário)\\b" },
-    { "type": "answer_matches", "name": "waits for approval", "pattern": "approv" },
-    { "type": "answer_has_table", "name": "inventory shown as table", "min_rows": 2 },
-    { "type": "dir_unchanged", "name": "no tests written before approval", "path": "tests" },
-    { "type": "dir_unchanged", "name": "specs untouched before approval", "path": "specs" },
-    { "type": "file_absent", "name": "no premature spec change", "path": "specs/coupons.md" }
+    {
+      "type": "file_exists",
+      "name": "tracking record opened",
+      "path": "$ACTIVITY/SHOP-101.json"
+    },
+    {
+      "type": "json_field_equals",
+      "name": "sprint recorded",
+      "path": "$ACTIVITY/SHOP-101.json",
+      "field": "sprint",
+      "value": "26-09"
+    },
+    {
+      "type": "file_exists",
+      "name": "dossier written before authoring",
+      "path": "qa/dossiers/SHOP-101.md"
+    },
+    {
+      "type": "answer_matches",
+      "name": "gherkin draft present",
+      "pattern": "^\\s*(Scenario|Cenário)\\b"
+    },
+    {
+      "type": "answer_matches",
+      "name": "waits for approval",
+      "pattern": "approv"
+    },
+    {
+      "type": "answer_has_table",
+      "name": "inventory shown as table",
+      "min_rows": 2
+    },
+    {
+      "type": "dir_unchanged",
+      "name": "no tests written before approval",
+      "path": "tests"
+    },
+    {
+      "type": "dir_unchanged",
+      "name": "specs untouched before approval",
+      "path": "specs"
+    },
+    {
+      "type": "file_absent",
+      "name": "no premature spec change",
+      "path": "specs/coupons.md"
+    }
   ]
 }

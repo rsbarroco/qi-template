@@ -68,23 +68,40 @@ def _qa_name() -> str:
 # ---------------------------------------------------------------------------
 
 def cmd_start(args: argparse.Namespace) -> None:
+    """Open (or update) the record. Re-running start never resets what it did not receive:
+    started_at is kept, sprint_label is kept unless passed, notes and counts are kept."""
     data = _load(args.ticket)
     data.update(
         {
             "ticket": args.ticket,
             "title": args.title,
             "sprint": args.sprint,
-            "sprint_label": getattr(args, "sprint_label", args.sprint),
             "basis": args.basis,
             "activity": args.activity,
             "qa": _qa_name(),
             "ai_used": "Yes - Claude",
-            "started_at": _now(),
-            "notes": data.get("notes", []),
         }
     )
+    if args.sprint_label:
+        data["sprint_label"] = args.sprint_label
+    data.setdefault("sprint_label", args.sprint)
+    data.setdefault("started_at", _now())
+    data.setdefault("notes", [])
     _save(args.ticket, data)
     print(f"[qa_track] Started tracking {args.ticket} — sprint {args.sprint}")
+
+
+def cmd_basis(args: argparse.Namespace) -> None:
+    """Revise --basis after the dossier shows what was actually read. Touches one field."""
+    data = _load(args.ticket)
+    if not data:
+        print(f"[qa_track] No record for {args.ticket}. Run `start` first.", file=sys.stderr)
+        sys.exit(1)
+    previous = data.get("basis")
+    data["basis"] = args.basis
+    data.setdefault("notes", []).append({"ts": _now(), "text": f"basis {previous} -> {args.basis}"})
+    _save(args.ticket, data)
+    print(f"[qa_track] {args.ticket}: basis {previous} -> {args.basis}")
 
 
 def cmd_count(args: argparse.Namespace) -> None:
@@ -177,6 +194,10 @@ def main() -> None:
     p_start.add_argument("--basis", choices=["ac", "plan", "both"], required=True)
     p_start.add_argument("--activity", required=True)
 
+    p_basis = sub.add_parser("basis")
+    p_basis.add_argument("--ticket", required=True)
+    p_basis.add_argument("--basis", choices=["ac", "plan", "both"], required=True)
+
     p_count = sub.add_parser("count")
     p_count.add_argument("--ticket", required=True)
     p_count.add_argument("--manual", type=int, required=True)
@@ -195,6 +216,7 @@ def main() -> None:
     args = parser.parse_args()
     dispatch = {
         "start": cmd_start,
+        "basis": cmd_basis,
         "count": cmd_count,
         "note": cmd_note,
         "status": cmd_status,

@@ -1,0 +1,90 @@
+{
+  "id": "full-dossier",
+  "query": "Take ticket SHOP-101 (tickets/SHOP-101.md), sprint 26-09. Do the full intake.",
+  "expected_behavior": [
+    "Opens the tracking record, then builds qa/dossiers/SHOP-101.md before touching specs or tests",
+    "Reads the comments file, both attachments (opens the PNG and the PDF), PR #42's diff, the parent SHOP-100 and the child SHOP-104",
+    "Records SHOP-205 (mentioned in a comment) as NOT FOUND instead of describing it",
+    "Does not mention any ticket key that does not exist in the fixture (only SHOP-100..104 and SHOP-205 exist as references)",
+    "Surfaces requirements outside the ACs with sources: upper-casing of codes (PR/comment), 50 % cap and no-combination rule (PDF), shipping never discounted (epic), the red inline banner (mockup, observed not inferred)",
+    "Revises the tracking record with `qa_track.py basis --basis both` because a PR diff was read",
+    "Inventory counts tests/checkout/coupon.spec.ts from the PR as partial coverage of AC1",
+    "Still stops at the approval gate: no test files, no spec edits, no COVERAGE.md change",
+    "The answer shows the inventory as a table and lists open questions"
+  ],
+  "graders": [
+    {
+      "type": "file_exists",
+      "name": "dossier written",
+      "path": "qa/dossiers/SHOP-101.md"
+    },
+    {
+      "type": "file_matches",
+      "name": "dossier cites PR 42",
+      "path": "qa/dossiers/SHOP-101.md",
+      "pattern": "PR\\s*#?42\\b|#42\\b"
+    },
+    {
+      "type": "file_matches",
+      "name": "dossier covers parent and child",
+      "path": "qa/dossiers/SHOP-101.md",
+      "pattern": "SHOP-100[\\s\\S]*SHOP-104|SHOP-104[\\s\\S]*SHOP-100"
+    },
+    {
+      "type": "file_matches",
+      "name": "SHOP-205 recorded as not found",
+      "path": "qa/dossiers/SHOP-101.md",
+      "pattern": "SHOP-205[^\\n]*NOT FOUND|NOT FOUND[^\\n]*SHOP-205"
+    },
+    {
+      "type": "file_not_matches",
+      "name": "no invented ticket keys",
+      "path": "qa/dossiers/SHOP-101.md",
+      "pattern": "SHOP-(?!10[0-4]\\b|110\\b|205\\b|09[0-9]\\b|08[0-9]\\b)\\d+"
+    },
+    {
+      "type": "file_matches",
+      "name": "PDF cap rule captured",
+      "path": "qa/dossiers/SHOP-101.md",
+      "pattern": "50\\s?%"
+    },
+    {
+      "type": "file_matches",
+      "name": "upper-casing surfaced as outside-AC behaviour",
+      "path": "qa/dossiers/SHOP-101.md",
+      "pattern": "upper[- ]?cas|toUpperCase|case[- ]insensitive"
+    },
+    {
+      "type": "json_field_equals",
+      "name": "basis revised to both",
+      "path": "$ACTIVITY/SHOP-101.json",
+      "field": "basis",
+      "value": "both"
+    },
+    {
+      "type": "answer_has_table",
+      "name": "inventory shown as table",
+      "min_rows": 3
+    },
+    {
+      "type": "answer_matches",
+      "name": "waits for approval",
+      "pattern": "approv"
+    },
+    {
+      "type": "dir_unchanged",
+      "name": "no tests written before approval",
+      "path": "tests"
+    },
+    {
+      "type": "dir_unchanged",
+      "name": "specs untouched before approval",
+      "path": "specs"
+    },
+    {
+      "type": "dir_unchanged",
+      "name": "coverage untouched",
+      "path": "COVERAGE.md"
+    }
+  ]
+}

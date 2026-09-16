@@ -381,3 +381,22 @@ def test_prerequisites_no_node_for_minimal(tmp_path: Path):
     generate(_minimal_cfg(), tmp_path)
     content = (tmp_path / "PREREQUISITES.md").read_text(encoding="utf-8")
     assert "Node.js" not in content
+
+
+def test_dossier_templates_and_intake_step_are_generated(tmp_path):
+    generate(_minimal_cfg(), tmp_path)
+    assert (tmp_path / "qa/dossiers/README.md").exists()
+    template = (tmp_path / "qa/dossiers/TEMPLATE.md").read_text()
+    assert "Traversal log" in template and "NOT FOUND" in template
+    intake = (tmp_path / ".claude/skills/ticket-intake.md").read_text()
+    assert "Step 2 — Dossier" in intake
+    assert "at most 8 fetched items" in intake
+    assert "tickets/<KEY>.md" in intake          # tracker == none branch
+    claude = (tmp_path / "CLAUDE.md").read_text()
+    assert "2. Dossier" in claude and "Three hard gates" in claude
+
+
+def test_intake_dossier_names_the_tracker_api(tmp_path):
+    generate(_full_cfg(), tmp_path)   # jira
+    intake = (tmp_path / ".claude/skills/ticket-intake.md").read_text()
+    assert "issuelinks" in intake and "tickets/<KEY>.md" not in intake

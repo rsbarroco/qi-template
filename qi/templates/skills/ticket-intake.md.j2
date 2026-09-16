@@ -7,12 +7,13 @@ including a bare ticket key with no other instruction.
 
 ```
 Step 1  TRACK      open the sprint AI-usage record
-Step 2  INVENTORY  does coverage already exist?
-Step 3  AUTHOR     write the missing Gherkin cases as a draft
-Step 4  APPROVE    QA engineer approves — nothing runs before this
-Step 5  EXECUTE    dev first, then staging, with evidence
-Step 6  AUTOMATE   only cases that passed
-Step 7  SYNC       doc platform + coverage + task tracker
+Step 2  DOSSIER    read the whole ticket: comments, attachments, PRs, linked tickets
+Step 3  INVENTORY  does coverage already exist?
+Step 4  AUTHOR     write the missing Gherkin cases as a draft
+Step 5  APPROVE    QA engineer approves — nothing runs before this
+Step 6  EXECUTE    dev first, then staging, with evidence
+Step 7  AUTOMATE   only cases that passed
+Step 8  SYNC       doc platform + coverage + task tracker
 ```
 
 ---
@@ -28,57 +29,163 @@ python scripts/qa_track.py start \
   --activity qa,automation
 ```
 
-`--basis` is what was actually read to derive the cases:
-- `ac` — only the ticket's Acceptance Criteria
-- `plan` — only an implementation plan, PR diff, or dev design
+`--basis` is what was actually read to derive the cases. Pick it from what the ticket
+has right now; Step 2 revises it once the dossier shows what else exists:
+
+- `ac` — only the ticket's Acceptance Criteria were read
+- `plan` — only an implementation plan, PR diff, or dev design (a ticket with no ACs)
 - `both` — AC and implementation were both used
+
+After Step 2, correct it with `python scripts/qa_track.py basis --ticket <KEY> --basis <value>`
+(never re-run `start`; `basis` changes that one field and leaves the record alone).
 
 ---
 
-## Step 2 — Inventory (gap analysis)
+## Step 2 — Dossier (full ticket analysis)
 
-Before writing any new case, check what already exists:
+A ticket is never just its description. Before touching specs or tests, assemble
+everything that exists about it into **`qa/dossiers/<TICKET-KEY>.md`** using the
+template in `qa/dossiers/TEMPLATE.md`. The dossier is what every later step reads; it is
+also what the QA engineer audits when the cases look wrong.
 
-1. Fetch the ticket from **{{ tracker_label }}**{% if tracker_project_key %} (project: `{{ tracker_project_key }}`){% endif %} — read the full AC / validation steps
-2. Search `specs/<domain>.md` for the ticket's feature area — list every row
-3. Search `tests/` for existing test cases covering the ACs
-4. Check the coverage page in {{ doc_label }}
+### 2a. Fetch the ticket itself
 
-Classify each AC:
+From **{{ tracker_label }}**{% if tracker_project_key %} (project: `{{ tracker_project_key }}`){% endif %}, read:
+
+- summary, description, acceptance criteria, validation steps, status, assignee, sprint
+- **every comment**, oldest first — decisions and scope changes hide in comments
+- **every attachment**: name, type, who added it, when
+- **every link**: parent / epic, sub-tasks / children, "relates to", "blocks", "is blocked
+  by", duplicates, and remote links (PRs, design docs, wiki pages)
+{% if tracker == 'jira' %}
+
+Jira: issue fields plus `comment`, `attachment`, `issuelinks`, `subtasks`, `parent` and
+remote links. Development-panel PR links count as links.
+{% elif tracker == 'github_issues' %}
+
+GitHub Issues: issue body, comments, the timeline (cross-referenced PRs and issues),
+sub-issues and the parent issue if any. Attachments are the images and files embedded in
+the body and comments.
+{% elif tracker == 'linear' %}
+
+Linear: issue, comments, attachments, relations (parent, sub-issues, blocks, related) and
+the GitHub PRs linked on the issue.
+{% elif tracker == 'azure_devops' %}
+
+Azure DevOps: work item, discussion, attachments and links (parent, child, related, pull
+requests).
+{% else %}
+
+No tracker connector: tickets live under `tickets/`. Read `tickets/<KEY>.md`, then the
+folder `tickets/<KEY>/` if it exists (`comments.md`, `attachments/`), and `prs/<N>.md` for
+pull requests referenced by number.
+{% endif %}
+
+### 2b. Follow the links — with a lock against hallucination
+
+You decide how far to follow links, based on what this ticket needs. The lock is
+non-negotiable:
+
+- **Only follow a link that appears verbatim in something you fetched.** A key you
+  "remember", infer from a naming pattern or guess from a sequence is not a link.
+- **Every fetched item goes in the traversal log** with where the link appeared (ticket
+  field, comment author, PR number) and a one-line reason for following it.
+- **A link that cannot be fetched is recorded as `NOT FOUND`** with the source that
+  mentioned it. Never fill it in from memory; never describe what it "probably" says.
+- **Stop when an item adds nothing to this ticket's ACs**, and say so in the log. A
+  parent epic is usually worth one read for scope; the epic's other children usually are
+  not.
+- **Budget: at most 8 fetched items beyond the ticket itself.** If you hit it, list what
+  you did not open and why it may matter.
+
+### 2c. Pull requests — read the diff, derive cases
+
+For every PR linked to the ticket (open, merged or closed):
+
+1. Record number, title, state, author, base branch, link
+2. Read the **diff**, not just the description. List the files touched
+3. List the **tests the developer added or changed** — they are candidate coverage and
+   usually reveal the real expected behaviour
+4. Write down every **behaviour visible in the code that the ACs do not mention**
+   (normalisation, defaults, error messages, limits). These become questions for the
+   QA engineer or extra scenarios in Step 4, never silent assumptions
+5. If any diff was read: `python scripts/qa_track.py basis --ticket <KEY> --basis both`
+   (or `plan` when the ticket has no ACs at all)
+
+### 2d. Attachments — open them, separate observed from inferred
+
+- **Images** (mockups, screenshots): open them. Describe **what is visible** (elements,
+  text, states, colours) under *Observed*. Anything you conclude from it goes under
+  *Inferred* and is marked as needing confirmation
+- **PDFs and documents**: read them. Quote the rules or requirements they add, with the
+  page or section
+- Anything you cannot open (no reader for the format, broken link): record it as
+  `NOT OPENED` with the reason. Never summarise a file you did not open
+
+### 2e. Write the dossier
+
+Fill `qa/dossiers/<TICKET-KEY>.md` from the template. Every fact carries its source. The
+dossier ends with the two lists that drive the next steps:
+
+- **Requirements found outside the ACs** (from comments, PRs, attachments, linked
+  tickets), each with its source
+- **Open questions** for the QA engineer / PO — everything ambiguous, contradictory or
+  missing
+
+Commit the dossier before moving on; it is evidence of what was read.
+
+---
+
+## Step 3 — Inventory (gap analysis)
+
+Read the dossier, not the raw ticket. Before writing any new case, check what already
+exists:
+
+1. Search `specs/<domain>.md` for the ticket's feature area — list every row
+2. Search `tests/` for existing test cases covering the ACs, **including tests the
+   linked PRs added** (from 2c)
+3. Check the coverage page in {{ doc_label }}
+
+Classify each AC — and each requirement found outside the ACs:
 - ✅ Covered — a test exists and the AC text still matches its `[Documentation]`
 - ⚠️ Partial — a test exists but the AC changed, or coverage is incomplete
 - ❌ Not covered — no test exists
 
+Show the classification as a table.
+
 **Decision tree:**
-- All ✅ → skip to Step 5 (reuse path)
-- Any ⚠️ or ❌ → proceed to Step 3
+- All ✅ → skip to Step 6 (reuse path)
+- Any ⚠️ or ❌ → proceed to Step 4
 
 ---
 
-## Step 3 — Author Gherkin cases
+## Step 4 — Author Gherkin cases
 
-Write one scenario per AC, in Gherkin (Given/When/Then/And).
+Write one scenario per AC, in Gherkin (Given/When/Then/And). Requirements found outside
+the ACs get their own scenarios, tagged as such, so the QA engineer can accept or drop
+them explicitly.
 
 Rules:
 - Describe observable behavior, not implementation details
-- Each scenario must be traceable to an AC number
+- Each scenario must be traceable to an AC number or to a dossier source
 - Two tags per scenario: `domain` + `feature-slug` (kebab-case, never ticket numbers)
-- Show the draft — do not proceed until Step 4 is complete
+- Show the draft — do not proceed until Step 5 is complete
 
 ---
 
-## Step 4 — APPROVE (hard gate)
+## Step 5 — APPROVE (hard gate)
 
 **Nothing runs. Nothing is published. Until the QA engineer explicitly says yes.**
 
-Present the Gherkin draft and wait for approval. If the engineer asks for changes, revise
-and re-present. Only proceed to Step 5 after an explicit "approved" or equivalent.
+Present the Gherkin draft and the dossier's open questions, then wait for approval. If
+the engineer asks for changes, revise and re-present. Only proceed to Step 6 after an
+explicit "approved" or equivalent.
 
 ---
 
-## Step 5 — Execute
+## Step 6 — Execute
 
-Classify each AC per the decision tree from Step 2, then pick the path:
+Classify each AC per the decision tree from Step 3, then pick the path:
 
 | RTM status | Path |
 |---|---|
@@ -105,9 +212,9 @@ Evidence required for every AC:
 
 ---
 
-## Step 6 — Automate
+## Step 7 — Automate
 
-Only automate cases that **passed** in Step 5.
+Only automate cases that **passed** in Step 6.
 
 1. Add the feature row to `specs/<domain>.md` — status ❌
 2. Write the test case (framework: {{ test_framework | title if test_framework != 'none' else 'your framework' }})
@@ -117,7 +224,7 @@ Only automate cases that **passed** in Step 5.
 
 ---
 
-## Step 7 — Sync
+## Step 8 — Sync
 
 After every automated case:
 
@@ -142,7 +249,7 @@ After every automated case:
 
 ---
 
-## Step 8 — Close tracking record
+## Step 9 — Close tracking record
 
 ```bash
 python scripts/qa_track.py count \

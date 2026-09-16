@@ -48,6 +48,9 @@ def _always() -> list[tuple[str, str]]:
         ("scripts/README-qa-activity.md.j2",          "scripts/README-qa-activity.md"),
         # Specs
         ("specs/README.md.j2",                       "specs/README.md"),
+        # Ticket dossiers (written by ticket-intake Step 2)
+        ("qa/dossiers/README.md.j2",                 "qa/dossiers/README.md"),
+        ("qa/dossiers/TEMPLATE.md.j2",               "qa/dossiers/TEMPLATE.md"),
     ]
 
 

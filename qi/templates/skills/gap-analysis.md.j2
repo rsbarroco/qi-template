@@ -1,7 +1,7 @@
 # Skill: gap-analysis
 
 Use this skill to perform a standalone coverage gap analysis for a ticket or feature area,
-before Step 3 of ticket-intake (or on demand).
+before Step 4 of ticket-intake (or on demand).
 
 ## Input
 
@@ -9,22 +9,14 @@ Ticket key + feature description, or a list of ACs.
 
 ## Step 1 — Pull the ACs
 
-Fetch the ticket from {{ tracker_label }}:
-{% if tracker == 'jira' %}
-- Project: `{{ tracker_project_key }}`
-- Read fields: `summary`, `description`, `acceptance criteria`, `validation steps`
-{% elif tracker == 'github_issues' %}
-- Repo: `{{ tracker_project_key }}`
-- Read the issue body for acceptance criteria and validation steps
-{% elif tracker == 'linear' %}
-- Team: `{{ tracker_project_key }}`
-- Read the issue description and sub-issues for acceptance criteria
-{% elif tracker == 'azure_devops' %}
-- Project: `{{ tracker_project_key }}`
-- Read the work item's Acceptance Criteria field and description
-{% else %}
-- Read the ticket's acceptance criteria / validation steps from {{ tracker_label }}
-{% endif %}
+**With a dossier** (`qa/dossiers/<TICKET-KEY>.md` exists): read it and use its ACs
+**and** its "requirements found outside the ACs" as the input. Do not re-fetch the
+ticket; the dossier is the fetched state.
+
+**Without a dossier**: stop and run Step 2 of `ticket-intake` first, then come back. A
+gap analysis on the bare description misses what the comments, attachments and PRs
+changed. The only exception is an explicit request for a quick, description-only pass;
+then fetch from {{ tracker_label }}{% if tracker == 'jira' %} (project `{{ tracker_project_key }}`: `summary`, `description`, `acceptance criteria`, `validation steps`){% elif tracker == 'github_issues' %} (repo `{{ tracker_project_key }}`: issue body, acceptance criteria, validation steps){% elif tracker == 'linear' %} (team `{{ tracker_project_key }}`: issue description and sub-issues){% elif tracker == 'azure_devops' %} (project `{{ tracker_project_key }}`: Acceptance Criteria field and description){% endif %} and label the result **description-only** in the report.
 
 ## Step 2 — Search existing coverage
 
@@ -59,5 +51,5 @@ Feature: <feature name>
     Then <expected outcome>
 ```
 
-These are drafts — do not proceed to execution until Step 4 of ticket-intake
+These are drafts — do not proceed to execution until Step 5 of ticket-intake
 (approval gate) is cleared.

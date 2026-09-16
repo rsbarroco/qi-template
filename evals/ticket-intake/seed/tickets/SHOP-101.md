@@ -2,6 +2,8 @@
 
 **Sprint:** 26-09
 **Type:** Story
+**Status:** In QA
+**Assignee:** dev.marta
 
 ## Description
 
@@ -23,3 +25,11 @@ unchanged.
 ## Validation steps
 
 Dev environment, checkout page `/checkout`, test cart with two items totalling 100.00.
+
+## Links
+
+- Parent: SHOP-100 (Epic — Promotions)
+- Child: SHOP-104 (Coupon analytics event)
+- Pull request: #42
+- Comments: `tickets/SHOP-101/comments.md`
+- Attachments: `tickets/SHOP-101/attachments/`

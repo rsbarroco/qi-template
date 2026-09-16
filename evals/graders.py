@@ -99,6 +99,26 @@ def answer_not_matches(state: RunState, cfg: dict) -> GraderResult:
     return GraderResult(cfg.get("name", f"answer_not_matches:{cfg['pattern']}"), ok, cfg["pattern"])
 
 
+def file_matches(state: RunState, cfg: dict) -> GraderResult:
+    p = _resolve(state, cfg["path"])
+    name = cfg.get("name", f"file_matches:{cfg['path']}:{cfg['pattern']}")
+    if not p.exists():
+        return GraderResult(name, False, "file missing")
+    ok = re.search(cfg["pattern"], p.read_text(errors="replace"), re.IGNORECASE | re.MULTILINE) is not None
+    return GraderResult(name, ok, cfg["pattern"])
+
+
+def file_not_matches(state: RunState, cfg: dict) -> GraderResult:
+    """Passes when the file exists and the pattern is absent. A missing file fails: absence
+    of the file is not evidence of absence of the pattern."""
+    p = _resolve(state, cfg["path"])
+    name = cfg.get("name", f"file_not_matches:{cfg['path']}:{cfg['pattern']}")
+    if not p.exists():
+        return GraderResult(name, False, "file missing")
+    m = re.search(cfg["pattern"], p.read_text(errors="replace"), re.IGNORECASE | re.MULTILINE)
+    return GraderResult(name, m is None, f"found {m.group(0)!r}" if m else cfg["pattern"])
+
+
 _TABLE_ROW = re.compile(r"^\s*\|.*\|\s*$", re.MULTILINE)
 
 
@@ -122,6 +142,8 @@ GRADERS = {
     "dir_unchanged": dir_unchanged,
     "only_changed_under": only_changed_under,
     "json_field_equals": json_field_equals,
+    "file_matches": file_matches,
+    "file_not_matches": file_not_matches,
     "answer_matches": answer_matches,
     "answer_not_matches": answer_not_matches,
     "answer_has_table": answer_has_table,

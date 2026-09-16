@@ -87,3 +87,19 @@ def test_unknown_grader_type_fails_loudly(tmp_path):
     st = _state(tmp_path)
     r = grade(st, [{"type": "does_not_exist"}])[0]
     assert not r.passed and "unknown" in r.detail
+
+
+def test_file_matches_and_not_matches_require_the_file(tmp_path):
+    st = _state(tmp_path)
+    spec_yes = [{"type": "file_matches", "path": "qa/dossiers/X.md", "pattern": "NOT FOUND"}]
+    spec_no = [{"type": "file_not_matches", "path": "qa/dossiers/X.md", "pattern": "SHOP-(?!101\\b)\\d+"}]
+    # missing file fails both: absence of the file is not evidence of anything
+    assert not grade(st, spec_yes)[0].passed
+    assert not grade(st, spec_no)[0].passed
+    (st.project / "qa" / "dossiers").mkdir(parents=True)
+    (st.project / "qa" / "dossiers" / "X.md").write_text("SHOP-101 ok\nSHOP-205 NOT FOUND\n")
+    assert grade(st, spec_yes)[0].passed
+    r = grade(st, spec_no)[0]
+    assert not r.passed and "SHOP-205" in r.detail
+    (st.project / "qa" / "dossiers" / "X.md").write_text("SHOP-101 only\n")
+    assert grade(st, spec_no)[0].passed
