@@ -22,6 +22,11 @@
       "value": "26-09"
     },
     {
+      "type": "file_exists",
+      "name": "dossier written before authoring",
+      "path": "qa/dossiers/SHOP-101.md"
+    },
+    {
       "type": "answer_matches",
       "name": "gherkin draft present",
       "pattern": "^\\s*(Scenario|Cenário)\\b"

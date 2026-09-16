@@ -9,21 +9,14 @@ Ticket key + feature description, or a list of ACs.
 
 ## Step 1 — Pull the ACs
 
-If `qa/dossiers/<TICKET-KEY>.md` exists, read it and use its ACs **and** its
-"requirements found outside the ACs" as the input — do not re-fetch. Otherwise, run
-Step 2 of `ticket-intake` first; a gap analysis on the bare description misses what the
-comments and PRs changed.
+**With a dossier** (`qa/dossiers/<TICKET-KEY>.md` exists): read it and use its ACs
+**and** its "requirements found outside the ACs" as the input. Do not re-fetch the
+ticket; the dossier is the fetched state.
 
-Fetch the ticket from {{ tracker_label }}:
-{% if tracker == 'jira' %}
-- Project: `{{ tracker_project_key }}`
-- Read fields: `summary`, `description`, `acceptance criteria`, `validation steps`
-{% elif tracker == 'github_issues' %}
-- Repo: `{{ tracker_project_key }}`
-- Read the issue body for acceptance criteria and validation steps
-{% else %}
-- Read the ticket's acceptance criteria / validation steps from {{ tracker_label }}
-{% endif %}
+**Without a dossier**: stop and run Step 2 of `ticket-intake` first, then come back. A
+gap analysis on the bare description misses what the comments, attachments and PRs
+changed. The only exception is an explicit request for a quick, description-only pass;
+then fetch from {{ tracker_label }}{% if tracker == 'jira' %} (project `{{ tracker_project_key }}`: `summary`, `description`, `acceptance criteria`, `validation steps`){% elif tracker == 'github_issues' %} (repo `{{ tracker_project_key }}`: issue body, acceptance criteria, validation steps){% endif %} and label the result **description-only** in the report.
 
 ## Step 2 — Search existing coverage
 

@@ -25,17 +25,19 @@ python scripts/qa_track.py start \
   --ticket <TICKET-KEY> \
   --title "<ticket summary>" \
   --sprint <sprint-id> \
-  --basis ac \
+  --basis ac|plan|both \
   --activity qa,automation
 ```
 
-Start with `--basis ac`. Step 2 revises it: if you read any PR diff or implementation
-plan, re-run the same command with `--basis both` (re-running `start` keeps the record
-and its notes; it only updates the fields you pass).
+`--basis` is what was actually read to derive the cases. Pick it from what the ticket
+has right now; Step 2 revises it once the dossier shows what else exists:
 
 - `ac` — only the ticket's Acceptance Criteria were read
-- `plan` — only an implementation plan, PR diff, or dev design
+- `plan` — only an implementation plan, PR diff, or dev design (a ticket with no ACs)
 - `both` — AC and implementation were both used
+
+After Step 2, correct it with `python scripts/qa_track.py basis --ticket <KEY> --basis <value>`
+(never re-run `start`; `basis` changes that one field and leaves the record alone).
 
 ---
 
@@ -107,7 +109,8 @@ For every PR linked to the ticket (open, merged or closed):
 4. Write down every **behaviour visible in the code that the ACs do not mention**
    (normalisation, defaults, error messages, limits). These become questions for the
    QA engineer or extra scenarios in Step 4, never silent assumptions
-5. If any diff was read, re-run `qa_track.py start` with `--basis both`
+5. If any diff was read: `python scripts/qa_track.py basis --ticket <KEY> --basis both`
+   (or `plan` when the ticket has no ACs at all)
 
 ### 2d. Attachments — open them, separate observed from inferred
 

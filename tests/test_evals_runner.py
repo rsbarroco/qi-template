@@ -18,6 +18,9 @@ query = args[args.index("-p") + 1]
 ticket = next(w for w in query.replace("(", " ").replace(")", " ").split() if w.startswith("SHOP-")).rstrip(".,")
 subprocess.run([sys.executable, "scripts/qa_track.py", "start", "--ticket", ticket, "--title", "fake",
                 "--sprint", "26-09", "--basis", "ac", "--activity", "qa"], check=True)
+os.makedirs("qa/dossiers", exist_ok=True)
+with open(f"qa/dossiers/{ticket}.md", "w") as fh:
+    fh.write(f"# Dossier — {ticket}\n\n| Item | Found in | Followed? |\n|---|---|---|\n| PR #42 | ticket | yes |\n")
 answer = "| AC | Status |\n|---|---|\n| AC1 | ❌ |\n| AC2 | ❌ |\n\nScenario: draft\n\nWaiting for approval."
 print(json.dumps({"type": "result", "result": answer, "total_cost_usd": 0.42,
                   "duration_ms": 1234, "num_turns": 7, "session_id": "fake", "is_error": False}))
