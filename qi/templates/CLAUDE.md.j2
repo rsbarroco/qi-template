@@ -12,18 +12,21 @@ When anyone hands over a ticket to test, verify, QA, or automate — invoke the
 
 ```
 1. Track     open the sprint AI-usage record (scripts/qa_track.py)
-2. Inventory do the cases already exist? Check local specs AND {{ doc_label }}
-3. Author    write the missing Gherkin cases as a draft
-4. APPROVE   the QA engineer approves the cases — nothing runs before this
-5. Execute   dev first, then staging, with evidence
-6. Automate  only cases that passed
-7. Sync      {{ doc_label }}, Coverage Stats, task tracker
+2. Dossier   read the WHOLE ticket — comments, attachments, PRs, linked tickets — into qa/dossiers/<KEY>.md
+3. Inventory do the cases already exist? Check local specs AND {{ doc_label }}
+4. Author    write the missing Gherkin cases as a draft
+5. APPROVE   the QA engineer approves the cases — nothing runs before this
+6. Execute   dev first, then staging, with evidence
+7. Automate  only cases that passed
+8. Sync      {{ doc_label }}, Coverage Stats, task tracker
 ```
 
-Two hard gates:
+Three hard gates:
 
-- **Never execute test cases that were not approved** (step 4).
-- **Never close a task without the Coverage Stats sync** (step 7) when any case was
+- **Never author cases from the ticket description alone** (step 2). Comments, PRs and
+  attachments change scope; a link you cannot fetch is `NOT FOUND`, never guessed.
+- **Never execute test cases that were not approved** (step 5).
+- **Never close a task without the Coverage Stats sync** (step 8) when any case was
   created or automated.
 
 ---

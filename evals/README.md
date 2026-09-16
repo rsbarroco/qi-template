@@ -25,7 +25,8 @@ evals/<skill>/
    caps every run.
 3. **Graders look at the final state of the disk and at the final answer, never at the
    transcript.** Did the tracking record appear? Did any file under `tests/` change?
-   Does the answer contain an evidence table? A grader is code; it does not judge prose.
+   Does the answer contain an evidence table? Does the dossier cite the PR and mark the
+   dangling ticket link as `NOT FOUND`? A grader is code; it does not judge prose.
 4. The run is appended to `runs.jsonl`. A human labels it later.
 
 ## Why humans label the first 30 runs

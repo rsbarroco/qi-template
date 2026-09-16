@@ -1,0 +1,16 @@
+# Ticket dossiers — {{ project_name }}
+
+One file per ticket, written during Step 2 of `ticket-intake`, before any case is
+authored. A dossier is the evidence of what was actually read: the ticket, its comments,
+attachments, pull requests and linked tickets.
+
+- File name: `<TICKET-KEY>.md`, copied from `TEMPLATE.md`
+- Every fact carries its source (ticket field, comment author + date, PR number, file
+  name, linked key)
+- Links that could not be fetched are recorded as `NOT FOUND`; files that could not be
+  opened as `NOT OPENED`. A dossier never contains a summary of something the agent did
+  not read
+- Dossiers are committed. When cases look wrong, the dossier is the first thing to audit
+
+Later skills (`gap-analysis`, `verify-ticket`) read the dossier instead of re-fetching
+the ticket.

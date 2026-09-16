@@ -73,7 +73,7 @@ qi [OUTPUT_DIR] [--dry-run]
 | `.claude/rules/coverage-sync.md` | Keeping coverage numbers in sync |
 | `.claude/rules/feedback-loop.md` | Post-session debrief process |
 | `.claude/rules/reusable-test-data.md` | Reusable E2E test data pattern |
-| `.claude/skills/ticket-intake.md` | 8-step QA intake workflow |
+| `.claude/skills/ticket-intake.md` | QA intake workflow: track, dossier, inventory, author, approve, execute, automate, sync |
 | `.claude/skills/verify-ticket.md` | Verification loop (RTM → evidence → transition) |
 | `.claude/skills/gap-analysis.md` | Coverage gap analysis |
 | `.claude/skills/sprint-report.md` | End-of-sprint AI-usage report |
@@ -81,6 +81,7 @@ qi [OUTPUT_DIR] [--dry-run]
 | `scripts/qa_track.py` | AI-usage activity tracker |
 | `scripts/coverage_report.py` | Recomputes COVERAGE.md from specs |
 | `specs/README.md` | How to write domain specs |
+| `qa/dossiers/TEMPLATE.md` | Ticket dossier: comments, attachments, PRs, linked tickets, with sources |
 | `PREREQUISITES.md` | System dependencies for your stack (Python, Node.js, Java…) |
 
 ### Generated conditionally (based on your answers)

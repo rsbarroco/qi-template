@@ -1,7 +1,7 @@
 # Skill: verify-ticket
 
-Use this skill during Step 5 (Execute) of ticket-intake. It runs the full verification
-loop for a ticket that has already been approved (Step 4 passed).
+Use this skill during Step 6 (Execute) of ticket-intake. It runs the full verification
+loop for a ticket that has already been approved (Step 5 passed).
 
 ## Step 0 — Pre-flight
 
@@ -11,6 +11,10 @@ Verify all required connectors are active before doing anything else. See
 `.claude/rules/connection-validation.md`.
 
 ### 0b. RTM — build the requirements-traceability matrix
+
+Read `qa/dossiers/<TICKET-KEY>.md` first. The RTM covers its ACs and its "requirements
+found outside the ACs"; if the dossier does not exist, Step 2 of `ticket-intake` was
+skipped — go back.
 
 For every AC in the ticket:
 

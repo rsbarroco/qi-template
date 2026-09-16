@@ -1,13 +1,18 @@
 # Skill: gap-analysis
 
 Use this skill to perform a standalone coverage gap analysis for a ticket or feature area,
-before Step 3 of ticket-intake (or on demand).
+before Step 4 of ticket-intake (or on demand).
 
 ## Input
 
 Ticket key + feature description, or a list of ACs.
 
 ## Step 1 — Pull the ACs
+
+If `qa/dossiers/<TICKET-KEY>.md` exists, read it and use its ACs **and** its
+"requirements found outside the ACs" as the input — do not re-fetch. Otherwise, run
+Step 2 of `ticket-intake` first; a gap analysis on the bare description misses what the
+comments and PRs changed.
 
 Fetch the ticket from {{ tracker_label }}:
 {% if tracker == 'jira' %}
@@ -53,5 +58,5 @@ Feature: <feature name>
     Then <expected outcome>
 ```
 
-These are drafts — do not proceed to execution until Step 4 of ticket-intake
+These are drafts — do not proceed to execution until Step 5 of ticket-intake
 (approval gate) is cleared.

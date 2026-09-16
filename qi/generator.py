@@ -37,6 +37,8 @@ def _always() -> list[tuple[str, str]]:
         ("scripts/coverage_report.py.j2",         "scripts/coverage_report.py"),
         ("scripts/README-qa-activity.md.j2",      "scripts/README-qa-activity.md"),
         ("specs/README.md.j2",                    "specs/README.md"),
+        ("qa/dossiers/README.md.j2",              "qa/dossiers/README.md"),
+        ("qa/dossiers/TEMPLATE.md.j2",            "qa/dossiers/TEMPLATE.md"),
         ("PREREQUISITES.md.j2",                   "PREREQUISITES.md"),
     ]
 
