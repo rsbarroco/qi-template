@@ -64,7 +64,7 @@ def test_every_skill_named_in_claude_md_exists(tmp_path):
 def test_conditional_skills_follow_the_config(tmp_path):
     generate(_cfg(), tmp_path)   # nothing optional
     skills = {p.name for p in (tmp_path / ".claude/skills").iterdir()}
-    assert skills == {"ticket-intake.md", "verify-ticket.md", "gap-analysis.md", "sprint-report.md", "json-schema.md"}
+    assert skills == {"ticket-intake.md", "verify-ticket.md", "gap-analysis.md", "sprint-report.md", "json-schema.md", "fix-tests.md", "diagnose.md", "report-bug.md"}
 
 
 @pytest.mark.parametrize("field, value, expect", [

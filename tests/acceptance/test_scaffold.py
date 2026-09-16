@@ -12,7 +12,7 @@ from qi.generator import generate
 
 scenarios("scaffold.feature")
 
-CORE_SKILLS = {"ticket-intake.md", "verify-ticket.md", "gap-analysis.md", "sprint-report.md", "json-schema.md"}
+CORE_SKILLS = {"ticket-intake.md", "verify-ticket.md", "gap-analysis.md", "sprint-report.md", "json-schema.md", "fix-tests.md", "diagnose.md", "report-bug.md"}
 
 
 @given(parsers.parse('a team that tracks work in Jira project "{key}"'), target_fixture="config")
