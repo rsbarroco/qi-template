@@ -30,6 +30,10 @@ STATUS_AUTOMATED = {"✅"}
 STATUS_PARTIAL = {"⚠️"}
 STATUS_MANUAL = {"❌"}
 
+# Documentation that lives next to the specs but is not a spec. Its example tables must
+# never be counted as coverage.
+NON_SPEC_FILES = {"README.MD", "TEMPLATE.MD"}
+
 
 def _parse_spec(path: Path) -> tuple[int, int, int]:
     """Return (automated, partial, manual_only) counts from a spec file."""
@@ -55,7 +59,10 @@ def main() -> None:
     parser.add_argument("--check", action="store_true", help="Exit 1 if coverage gaps exist")
     args = parser.parse_args()
 
-    specs = sorted(SPECS_DIR.glob("*.md")) if SPECS_DIR.exists() else []
+    specs = (
+        sorted(p for p in SPECS_DIR.glob("*.md") if p.name.upper() not in NON_SPEC_FILES)
+        if SPECS_DIR.exists() else []
+    )
 
     totals = {"auto": 0, "partial": 0, "manual": 0}
     rows: list[tuple[str, int, int, int]] = []

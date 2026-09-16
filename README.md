@@ -124,6 +124,14 @@ the corresponding Jinja2 template in [`qi/templates/`](qi/templates/).
 git clone https://github.com/rsbarroco/QI-template
 cd QI-template
 pip install -e ".[dev]"
+python -m pytest -q                       # unit + generated-script + acceptance (Gherkin) tests
+python -m evals run ticket-intake --dry-run   # eval graders on the untouched fixture
+```
+
+See `tests/README.md` for the test pyramid and `evals/README.md` for the agent evals.
+
+```bash
+# (kept for copy-paste)
 pytest tests/ -v
 ```
 

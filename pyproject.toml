@@ -19,6 +19,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
+    "pytest-bdd>=7.0",
+    "pyyaml>=6.0",
 ]
 
 [project.scripts]
@@ -30,3 +32,7 @@ include = ["qi*"]
 
 [tool.setuptools.package-data]
 qi = ["templates/**/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+bdd_features_base_dir = "tests/acceptance/features"

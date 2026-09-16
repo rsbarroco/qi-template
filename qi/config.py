@@ -12,7 +12,7 @@ class Config:
     doc_platform: str = "none"       # confluence | notion | github_wiki | none
 
     # Databases
-    sql_dbs: list[str] = field(default_factory=list)    # postgres | mysql | sqlite | mssql
+    sql_dbs: list[str] = field(default_factory=list)    # postgresql | mysql | sqlite | mssql
     nosql_dbs: list[str] = field(default_factory=list)  # mongodb | redis | dynamodb | firestore
 
     # UI / mobile
