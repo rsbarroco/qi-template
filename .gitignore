@@ -9,3 +9,6 @@ venv/
 *.log
 .pytest_cache/
 .ruff_cache/
+
+# eval harness scratch (rendered fixture projects); runs.jsonl and labels.jsonl ARE committed
+evals/.runs/
