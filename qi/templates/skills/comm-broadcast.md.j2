@@ -1,0 +1,98 @@
+# Comm Broadcast — {{ project_name }}
+
+Post QA lifecycle notifications to **{{ comm_platform_label }}** channel
+`{{ comm_platform_channel }}`. Notify-only — {{ comm_platform_label }} is never a
+reconstruction source for pipeline state.
+
+## When to use
+
+| Trigger | Message type |
+|---|---|
+| Simple feature path complete | QA brief |
+| All phases complete (done) | Deploy advisory |
+| Rewrite ceiling hit (3 times) | Human escalation |
+| Environment / blocker discovered | Blocker ping |
+
+## Message Shapes
+
+### 1. QA Brief (simple feature path)
+
+Use when test-design-agent completes a `done_simple` ticket.
+
+```
+📋 *QA Brief — <ticket-key>* | {{ project_name }}
+
+<Feature Name>
+
+Scope: <what was tested>
+Result: ✅ Passed | ⚠️ Conditional | ❌ Failed
+
+Notes:
+• <bullet 1>
+• <bullet 2>
+
+Ticket: <link>
+```
+
+### 2. Deploy Advisory (pipeline complete)
+
+Use when automation-agent completes and all phases have passed.
+
+```
+🚀 *QA Advisory — <ticket-key>* | {{ project_name }}
+
+*<Feature Name>* is ready for deploy review.
+
+Coverage:
+• {{ test_repo_label if has_test_repo else "Cases" }}: N cases
+• Automated: N / N automatable
+• Excluded: N (with reasons)
+
+Compliance: ✅ PASS (0 critical, 0 major)
+
+Ticket: <link>
+{% if has_test_repo %}Test Run: <link>{% endif %}
+
+⚠️ Do not merge until a human reviews the draft PR.
+```
+
+### 3. Human Escalation
+
+Use when the 3-rewrite ceiling is hit for any phase.
+
+```
+🚨 *QA Escalation — <ticket-key>* | {{ project_name }}
+
+Phase *<phase name>* has been rewritten 3 times without resolving violations.
+Human review required before the pipeline can advance.
+
+Last violation summary:
+<paste the critical findings from convention-check>
+
+Last actions taken:
+<paste the actions_taken list from the last handoff contract>
+
+Ticket: <link>
+```
+
+### 4. Blocker Ping
+
+Use when a blocker is discovered (stale auth, missing AC, environment down).
+
+```
+⚠️ *QA Blocker — <ticket-key>* | {{ project_name }}
+
+Blocker: <one-line description>
+Impact: Pipeline halted at phase <name>
+Action needed: <what a human needs to do>
+
+Ticket: <link>
+```
+
+## Hard Rules
+
+- Post to `{{ comm_platform_channel }}` only — never to DMs or other channels.
+- **Never** include credentials, session tokens, or sensitive data in any message.
+- **Never** use {{ comm_platform_label }} to reconstruct pipeline state — read `.claude/references/` instead.
+- Keep messages concise — link to the full artifacts rather than pasting their content.
+- One message per event — do not flood the channel with intermediate updates.

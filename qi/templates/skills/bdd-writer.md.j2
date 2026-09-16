@@ -1,0 +1,67 @@
+# BDD Writer — {{ project_name }}
+
+Skill for authoring, updating, and migrating test cases in {{ test_repo_label }}.
+Invoked by **bdd-agent** during normal pipeline flow, or directly for maintenance tasks.
+
+## Modes
+
+| Mode | When to use |
+|---|---|
+| `CREATE` | New ticket — no cases exist yet |
+| `UPDATE` | TD doc was revised — some cases need to change |
+| `MIGRATE` | Cases exist in a legacy format/location and need to be moved to the standard section structure |
+
+## Invocation
+
+```
+/bdd-writer <mode> <ticket_key>
+```
+
+Always read `.claude/references/test-sections.md` before creating or moving cases.
+
+## Mode: CREATE
+
+1. Read the TD Coverage Map — one row = one case.
+2. Derive testable requirements: each row becomes one test case title and one set of steps.
+3. Set the 6 label dimensions for each case:
+   - `type`: `functional | regression | smoke | integration | negative`
+   - `domain`: the feature domain (e.g. `auth`, `checkout`, `reporting`)
+   - `scope`: `ui | api | db | e2e`
+   - `priority`: `critical | high | medium | low`
+   - `automation_status`: `manual` (always, until automation-agent runs)
+   - `environment`: `staging | dev | both`
+4. Show the draft to the user — wait for explicit approval.
+5. On approval, publish to {{ test_repo_label }} under the correct section.
+6. Write back section path + case IDs to `.claude/references/test-sections.md`.
+
+## Mode: UPDATE
+
+1. Read the current cases from {{ test_repo_label }}.
+2. Read the revised TD Coverage Map.
+3. Diff: identify added rows (new cases), removed rows (obsolete cases), changed rows (updated cases).
+4. For **added rows**: create new cases (follow CREATE procedure).
+5. For **removed rows**: mark cases as `Deprecated` — never delete cases with recorded results.
+6. For **changed rows**: update the case title, steps, or expected results.
+7. Show the diff to the user — wait for explicit approval.
+8. On approval, apply the updates.
+
+## Mode: MIGRATE
+
+1. Identify cases in the legacy location (wrong project, wrong section path, old naming format).
+2. For each legacy case:
+   - Map it to the correct section path using `.claude/references/test-sections.md`.
+   - Apply TC convention rules (TC-001..TC-009) — fix any violations.
+   - Create a new case in the correct location (do not modify the legacy case yet).
+3. Show the migration plan to the user — wait for explicit approval.
+4. On approval:
+   - Create the new cases.
+   - Add a deprecation note to the legacy cases (do not delete).
+   - Write back new section paths to `.claude/references/test-sections.md`.
+
+## Hard Rules
+
+- **Never** publish a case without explicit user approval.
+- **Never** delete a case that has recorded results — mark `Deprecated` instead.
+- **Never** create a case without the Refs field set to the ticket key.
+- **Always** convention-check every case (TC-001..TC-009) before showing the draft.
+- **Always** write back to `.claude/references/test-sections.md` after any publish.

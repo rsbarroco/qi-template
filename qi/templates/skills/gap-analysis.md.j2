@@ -16,7 +16,7 @@ ticket; the dossier is the fetched state.
 **Without a dossier**: stop and run Step 2 of `ticket-intake` first, then come back. A
 gap analysis on the bare description misses what the comments, attachments and PRs
 changed. The only exception is an explicit request for a quick, description-only pass;
-then fetch from {{ tracker_label }}{% if tracker == 'jira' %} (project `{{ tracker_project_key }}`: `summary`, `description`, `acceptance criteria`, `validation steps`){% elif tracker == 'github_issues' %} (repo `{{ tracker_project_key }}`: issue body, acceptance criteria, validation steps){% endif %} and label the result **description-only** in the report.
+then fetch from {{ tracker_label }}{% if tracker == 'jira' %} (project `{{ tracker_project_key }}`: `summary`, `description`, `acceptance criteria`, `validation steps`){% elif tracker == 'github_issues' %} (repo `{{ tracker_project_key }}`: issue body, acceptance criteria, validation steps){% elif tracker == 'linear' %} (team `{{ tracker_project_key }}`: issue description and sub-issues){% elif tracker == 'azure_devops' %} (project `{{ tracker_project_key }}`: Acceptance Criteria field and description){% endif %} and label the result **description-only** in the report.
 
 ## Step 2 — Search existing coverage
 

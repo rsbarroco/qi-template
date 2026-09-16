@@ -1,0 +1,53 @@
+# Test Execution Path — {{ project_name }}
+
+Read this before re-exploring the DOM or re-running a browser session to verify
+a UI path. It records the canonical navigation flows for each feature area so
+you do not waste tokens re-discovering well-known paths.
+
+## Purpose
+
+When automation-agent or fix-tests needs to locate a UI element or navigate to a
+feature, check this file first. If the path is documented here, use it directly.
+If it is not, navigate to discover it, then **add it to this file** before closing
+the session.
+
+## Navigation Registry
+
+| Feature area | Starting point | Navigation path | Notes |
+|---|---|---|---|
+| `<Feature name>` | `<base URL>` | `<menu > submenu > page>` | Requires `<persona>` role |
+
+Add rows as features are tested. This file is updated by automation-agent and fix-tests.
+
+## Locator Stability Guide
+
+Order of preference for locators (most stable → least stable):
+
+1. `data-testid` attribute — most stable, team-owned
+2. ARIA role + accessible name — `getByRole('button', { name: 'Submit' })`
+3. ARIA label — `getByLabel('Email address')`
+4. `id` attribute — stable if team-assigned, fragile if auto-generated
+5. Semantic CSS class — `.submit-button` (if class is semantic, not a CSS utility)
+6. XPath — last resort only
+
+**Never** use positional selectors (`:nth-child`, `>> nth=2`) except in tests that
+explicitly verify ordering.
+
+## Stale Locator Protocol
+
+When a locator stops working:
+1. Screenshot the current page state.
+2. Find the element visually.
+3. Inspect the element — identify the best stable locator from the preference list above.
+4. Update the spec and this registry.
+5. File a note in `WATCH_CANDIDATES.md` if the locator broke due to a UI change
+   that was not announced — it may indicate a missing `data-testid`.
+
+## Anti-Patterns
+
+| Anti-pattern | Problem | Alternative |
+|---|---|---|
+| `page.locator('div > div > button')` | Breaks on any DOM restructure | `getByRole('button', { name: '...' })` |
+| `page.locator('.css-12abc')` | CSS utility class is auto-generated | `data-testid` or ARIA role |
+| `page.waitForTimeout(3000)` | Arbitrary sleep | `page.waitForSelector()` or `expect(...).toBeVisible()` |
+| Locator in a `describe` block | Not scoped — matches anywhere on the page | Scope to the component: `component.getByRole(...)` |

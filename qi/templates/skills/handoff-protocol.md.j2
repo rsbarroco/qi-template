@@ -1,0 +1,72 @@
+# Handoff Protocol — {{ project_name }}
+
+The handoff contract is the **only** thing carried across an agent boundary. No stored
+state machine. No separate log. The live artifacts plus this contract are the complete
+state of the pipeline.
+
+## Contract Schema
+
+Every sub-agent receives and produces a JSON object with these fields:
+
+```json
+{
+  "ticket_key":      "string  — REQUIRED. The tracker ticket identifier (e.g. PROJ-1234).",
+  "td_doc_id":       "string  — OPTIONAL. ID or path of the TD doc. Required by: bdd-agent, manual-agent, automation-agent.",
+  "test_section_id": "string  — OPTIONAL. Section/folder ID in {{ test_repo_label }}. Required by: manual-agent, automation-agent.",
+  "test_case_ids":   ["array  — OPTIONAL. Case IDs from {{ test_repo_label }}. Required by: manual-agent, automation-agent."],
+  "test_run_id":     "string  — OPTIONAL. Run/cycle ID in {{ test_repo_label }}. Required by: automation-agent.",
+  "actions_taken":   ["array  — REQUIRED. Every action the agent performed, in order."],
+  "routing": {
+    "target": "string — bdd | manual | automation | test_design | done | done_simple"
+  },
+  "writeback_targets": ["array — Paths of .md reference files the main agent must update after receiving this contract."]
+}
+```
+
+## Validation Rules
+
+**The main agent runs these checks after every sub-agent returns:**
+
+1. `ticket_key` is present and non-empty.
+2. `actions_taken` is a non-empty array.
+3. `routing.target` is one of the allowed values.
+4. If `routing.target` is `bdd`, then `td_doc_id` is present.
+5. If `routing.target` is `manual`, then `td_doc_id` and `test_case_ids` are present.
+6. If `routing.target` is `automation`, then `test_case_ids` and `test_run_id` are present.
+7. All `writeback_targets` listed have been written to by the agent.
+
+**If any check fails:** re-dispatch the same agent with the violation list attached.
+
+## Write-back Procedure
+
+After a sub-agent returns a contract with `writeback_targets`, the **main agent** (not the
+sub-agent) performs the write-back:
+
+| Sub-agent | When to write back | Target file |
+|---|---|---|
+| bdd-agent | After publishing cases | `.claude/references/test-sections.md` |
+| automation-agent | After writing the ledger | `.claude/references/automation-coverage.md` |
+
+Write-back keeps the local reference cache current so that the next cold-start session
+does not need a live {{ test_repo_label }} query to reconstruct state.
+
+## Routing Decision Map
+
+| `routing.target` | Means | Main agent action |
+|---|---|---|
+| `test_design` | TD doc missing, ACs unclear, or `failed_requirement` from manual | Spawn test-design-agent |
+| `bdd` | TD at In Review (or Approved but no cases) | Spawn bdd-agent |
+| `manual` | Cases published, no run yet | Spawn manual-agent |
+| `automation` | All cases have verdicts, ≥1 automatable has no spec | Spawn automation-agent |
+| `done` | All automatable cases automated, rest excluded | Run final compliance pass |
+| `done_simple` | Simple feature path — QA brief published, no test repo needed | Done (no further agents) |
+
+## Escalation
+
+If the same phase has been re-dispatched **3 times** without resolving the violation:
+- Stop dispatching.
+{% if has_comm_platform %}
+- Post a human-escalation message to {{ comm_platform_label }} `{{ comm_platform_channel }}`.
+{% endif %}
+- Include the violation list and the three `actions_taken` logs in the escalation.
+- Halt — do not attempt a fourth dispatch.

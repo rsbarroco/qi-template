@@ -1,0 +1,71 @@
+# Runtime dependencies for {{ project_name }} test suite
+# Add your framework-specific packages below.
+# This file is read by CI (see your CI config under .github/ or .gitlab-ci.yml).
+
+{% if test_framework == 'playwright' %}
+playwright>=1.40
+pytest-playwright>=0.4
+{% elif test_framework == 'robot' %}
+robotframework>=7.0
+robotframework-seleniumlibrary>=6.0
+robotframework-requests>=0.9
+{% elif test_framework == 'pytest' %}
+pytest>=8.0
+pytest-asyncio>=0.23
+{% endif %}
+{% if ui_web and test_framework not in ('playwright',) %}
+selenium>=4.15
+{% endif %}
+{% if has_sql %}
+{% for db in sql_dbs %}
+{% if db == 'postgresql' or db == 'postgres' %}
+psycopg2-binary>=2.9
+{% elif db == 'mysql' %}
+mysql-connector-python>=8.0
+{% elif db == 'mssql' or db == 'ms_sql_server' %}
+pyodbc>=4.0
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if has_nosql %}
+{% for db in nosql_dbs %}
+{% if db == 'mongodb' %}
+pymongo>=4.6
+{% elif db == 'redis' %}
+redis>=5.0
+{% elif db == 'dynamodb' %}
+boto3>=1.34
+{% elif db == 'firestore' %}
+google-cloud-firestore>=2.14
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if has_cloud %}
+{% if cloud == 'aws' %}
+boto3>=1.34
+{% elif cloud == 'gcp' %}
+google-cloud-logging>=3.9
+{% elif cloud == 'azure' %}
+azure-monitor-query>=1.3
+{% endif %}
+{% endif %}
+{% if has_queues %}
+{% for q in queues %}
+{% if q == 'sqs' %}
+boto3>=1.34
+{% elif q == 'pubsub' %}
+google-cloud-pubsub>=2.18
+{% elif q == 'kafka' %}
+kafka-python>=2.0
+{% elif q == 'rabbitmq' %}
+pika>=1.3
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if has_performance %}
+{% if performance == 'locust' %}
+locust>=2.20
+{% endif %}
+{% endif %}
+python-dotenv>=1.0
+requests>=2.31

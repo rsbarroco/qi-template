@@ -1,0 +1,58 @@
+# Confluence Editing — {{ project_name }}
+
+Rules for creating and updating pages in Confluence. Read this before any Confluence
+write operation.
+
+## Page Creation
+
+- Always create pages with **Storage Format** (not Markdown or Wiki markup).
+- Set the `status` page property immediately — do not leave it as "current".
+- The page title **must** contain the ticket key for searchability and cold-start reconstruction.
+- Use the correct parent page ID from `.claude/references/project-constants.md`.
+
+## Storage Format vs. Markdown
+
+Confluence's REST API uses Storage Format (XHTML-based), not Markdown. Key differences:
+
+| Markdown | Storage Format equivalent |
+|---|---|
+| `**bold**` | `<strong>bold</strong>` |
+| `# Heading 1` | `<h1>Heading 1</h1>` |
+| `\| col1 \| col2 \|` | `<table><tr><th>col1</th>...` |
+| ` ```code``` ` | `<code>code</code>` or `<ac:structured-macro ac:name="code">` |
+
+When writing page content via the MCP, always pass `content.representation = "storage"`.
+
+## Updating Existing Pages
+
+Before updating a page:
+1. Fetch the current page to get the `version.number`.
+2. Increment `version.number` by 1 in your update request — Confluence will reject stale updates.
+3. Preserve the `status` property unless you are intentionally changing it (e.g. In Review → Approved).
+
+## Status Field
+
+Use the Confluence page properties macro to maintain the `status` field:
+
+| Status | When to set it |
+|---|---|
+| `In Review` | test-design-agent publishes the TD doc |
+| `Approved` | bdd-agent promotes the TD doc after publishing cases |
+| `Deprecated` | Feature is removed or superseded |
+
+## Search Tips
+
+To find a page by ticket key:
+```
+CQL: title ~ "PROJ-1234" AND space = "<SPACE_KEY>"
+```
+
+Use `searchConfluenceUsingCql` with this query before creating a new page — always
+check for an existing page first.
+
+## Hard Rules
+
+- **Never** create a duplicate page — search before creating.
+- **Never** use Markdown format for page content — always use Storage Format.
+- **Never** omit the `version.number` on an update — the request will fail.
+- **Never** delete a page — deprecate it by setting the status property to `Deprecated`.

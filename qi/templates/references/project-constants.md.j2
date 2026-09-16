@@ -1,0 +1,108 @@
+# Project Constants — {{ project_name }}
+
+Living reference file. Agents read this before any task. Update it when environment
+details change — never hardcode these values in test code or agent instructions.
+
+## Environments
+
+| Environment | Base URL | Notes |
+|---|---|---|
+| Dev | `<DEV_BASE_URL>` | Local or shared development environment |
+| Staging | `<STAGING_BASE_URL>` | Pre-production; primary target for QA |
+| Production | `<PROD_BASE_URL>` | **Never a mutation target** |
+
+## Credential Env Vars
+
+Credentials are **never** stored here — only the environment variable names.
+
+| Persona | Env var (username) | Env var (password) | Description |
+|---|---|---|---|
+| Admin | `QA_ADMIN_USER` | `QA_ADMIN_PASS` | Full system access |
+| Standard User | `QA_USER_USER` | `QA_USER_PASS` | Regular end-user persona |
+| Read-Only | `QA_READONLY_USER` | `QA_READONLY_PASS` | View-only permissions |
+
+Add rows for each persona relevant to this project.
+
+## Project Identifiers
+
+{% if tracker != 'none' %}
+### {{ tracker_label }}
+| Key | Value |
+|---|---|
+| Project key / identifier | `{{ tracker_project_key if tracker_project_key else '<TRACKER_PROJECT_KEY>' }}` |
+{% if tracker == 'jira' %}
+| Base URL | `<JIRA_BASE_URL>` |
+{% elif tracker == 'github_issues' %}
+| Repository | `{{ tracker_project_key if tracker_project_key else '<OWNER/REPO>' }}` |
+{% endif %}
+
+{% endif %}
+{% if doc_platform != 'none' %}
+### {{ doc_label }}
+| Key | Value |
+|---|---|
+{% if doc_platform == 'confluence' %}
+| Test Specification space key | `<CONFLUENCE_SPACE_KEY>` |
+| Test Specification parent page ID | `<CONFLUENCE_PARENT_PAGE_ID>` |
+| Base URL | `<CONFLUENCE_BASE_URL>` |
+{% elif doc_platform == 'notion' %}
+| QA Test Designs database ID | `<NOTION_DATABASE_ID>` |
+{% elif doc_platform == 'github_wiki' %}
+| Wiki base URL | `<GITHUB_WIKI_URL>` |
+{% else %}
+| Local designs directory | `.qa/designs/` |
+{% endif %}
+
+{% endif %}
+{% if has_test_repo %}
+### {{ test_repo_label }}
+| Key | Value |
+|---|---|
+| Project ID | `{{ test_repo_project_key if test_repo_project_key else '<TEST_REPO_PROJECT_ID>' }}` |
+{% if test_repo == 'testrail' %}
+| Suite ID | `<TESTRAIL_SUITE_ID>` |
+| Base URL | `<TESTRAIL_BASE_URL>` |
+| API user env var | `TESTRAIL_USER` |
+| API key env var | `TESTRAIL_API_KEY` |
+{% elif test_repo == 'zephyr' %}
+| Jira base URL | `<JIRA_BASE_URL>` |
+{% elif test_repo == 'xray' %}
+| Xray client ID env var | `XRAY_CLIENT_ID` |
+| Xray client secret env var | `XRAY_CLIENT_SECRET` |
+{% elif test_repo == 'azure_test_plans' %}
+| Organization | `<AZURE_ORG>` |
+| Personal access token env var | `AZURE_PAT` |
+{% endif %}
+
+{% endif %}
+{% if has_comm_platform %}
+### {{ comm_platform_label }}
+| Key | Value |
+|---|---|
+| QA channel | `{{ comm_platform_channel }}` |
+{% if comm_platform == 'slack' %}
+| Bot token env var | `SLACK_BOT_TOKEN` |
+| Webhook URL env var | `SLACK_WEBHOOK_URL` |
+{% elif comm_platform == 'teams' %}
+| Webhook URL env var | `TEAMS_WEBHOOK_URL` |
+{% elif comm_platform == 'discord' %}
+| Webhook URL env var | `DISCORD_WEBHOOK_URL` |
+{% endif %}
+
+{% endif %}
+## Feature Flags
+
+| Flag name | Default (staging) | Notes |
+|---|---|---|
+| `<FLAG_NAME>` | `enabled / disabled` | Description of what this flag controls |
+
+Add rows for each feature flag that affects test behaviour.
+
+## Domain-Specific Identifiers
+
+Add any project-specific identifiers here (property IDs, tenant IDs, shard keys, etc.)
+that agents need to provision test data or construct requests.
+
+| Name | Value | Notes |
+|---|---|---|
+| `<IDENTIFIER_NAME>` | `<VALUE>` | Description |

@@ -1,0 +1,100 @@
+# Diagnose — {{ project_name }}
+
+Multi-phase debugging loop for unexpected behaviour in tests or the application.
+Use when you cannot immediately identify the root cause from the error message alone.
+
+## Phase 1 — Build a fast, deterministic feedback signal
+
+Before any investigation: create the shortest possible reproduction.
+- Identify the minimal preconditions (fewest setup steps, smallest dataset)
+- Run only the failing test or the failing UI path in isolation
+- Confirm the failure is deterministic (run it 3 times — if it flakes, it is a timing issue)
+
+A fast feedback signal (< 30 seconds to run) lets you iterate quickly.
+
+## Phase 2 — Reproduce manually
+
+{% if ui_web %}
+Open a browser session and walk through the failing steps by hand:
+- Log in as the correct persona (credentials from `project-constants.md`)
+- Follow the test steps exactly as written
+- Observe the actual result — screenshot at each step
+- Note whether the failure is consistent or intermittent
+{% else %}
+Execute the failing scenario through the application's API or UI:
+- Use the correct persona and preconditions from `project-constants.md`
+- Follow the test steps exactly as written
+- Record the actual vs. expected result
+{% endif %}
+
+If you cannot reproduce it manually, the test may have environment-specific dependencies.
+Document this and stop — do not speculate about the root cause.
+
+## Phase 3 — Minimise
+
+Strip the reproduction to its irreducible core:
+- Remove steps that are not required to trigger the failure
+- Replace complex test data with the simplest possible data that still triggers it
+- Identify the single line of application code or test code that causes the failure
+
+## Phase 4 — Hypothesise
+
+Form one hypothesis at a time. Write it down:
+```
+Hypothesis: <what I think is happening>
+Evidence for: <what supports this>
+Evidence against: <what contradicts this>
+Test: <how I will confirm or refute this>
+```
+
+Do not act on multiple hypotheses simultaneously.
+
+## Phase 5 — Instrument
+
+Add targeted observation points to confirm or refute the hypothesis:
+{% if has_sql %}
+- Query the DB before and after the failing action to observe state changes
+{% endif %}
+{% if has_cloud %}
+- Check {{ cloud_label }} logs for the event timestamp window around the failure
+{% endif %}
+{% if ui_web %}
+- Capture network requests and responses during the failing flow
+- Check browser console errors
+{% endif %}
+- Add minimal debug logging (remove before committing)
+
+## Phase 6 — Fix or escalate
+
+If the hypothesis is confirmed:
+- Apply the minimal fix (test bug → fix the test; app bug → file via `report-bug` skill)
+- Verify the fix with the full reproduction path
+
+If after 3 hypotheses the root cause is still unclear:
+- Document everything you have found (minimised reproduction, what you ruled out)
+- Escalate to a human with the full diagnostic report
+
+## Human-in-the-Loop Template
+
+When you need a human to click through a step while you observe:
+
+```bash
+#!/bin/bash
+# Paste this into a terminal; the AI will guide you step by step
+
+step() { echo "=== STEP: $1 ==="; read -p "Press Enter when done..."; }
+capture() { echo "--- OBSERVATION: $1 ---"; read -p "What do you see? > " OBS; echo "$OBS"; }
+
+step "Log in as <persona> at <staging URL>"
+capture "Is the login successful?"
+step "Navigate to <feature>"
+capture "What does the UI show?"
+```
+
+## Hard Rules
+
+- Build the feedback signal **before** reading any code — do not start with code.
+- Form hypotheses one at a time — do not chase multiple theories simultaneously.
+- **Never** declare an app bug without manual reproduction.
+- **Never** fix a test by weakening the assertion — if the test is correct, the app is wrong.
+- After 3 hypotheses without resolution, escalate — do not keep guessing.

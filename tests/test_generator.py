@@ -162,33 +162,33 @@ def test_generate_full_creates_all_files(tmp_path: Path):
 def test_claude_md_contains_project_name(tmp_path: Path):
     cfg = _full_cfg()
     generate(cfg, tmp_path)
-    content = (tmp_path / "CLAUDE.md").read_text()
+    content = (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
     assert "Full Stack Project" in content
 
 
 def test_claude_md_contains_tracker_label(tmp_path: Path):
     generate(_full_cfg(), tmp_path)
-    content = (tmp_path / "CLAUDE.md").read_text()
+    content = (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
     assert "Jira" in content
 
 
 def test_claude_md_minimal_has_no_sql_section(tmp_path: Path):
     generate(_minimal_cfg(), tmp_path)
-    content = (tmp_path / "CLAUDE.md").read_text()
+    content = (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
     assert "SQL DB" not in content
     assert "NoSQL" not in content
 
 
 def test_claude_md_full_has_sql_and_nosql(tmp_path: Path):
     generate(_full_cfg(), tmp_path)
-    content = (tmp_path / "CLAUDE.md").read_text()
+    content = (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
     assert "SQL" in content
     assert "NoSQL" in content
 
 
 def test_ticket_intake_skill_references_tracker(tmp_path: Path):
     generate(_full_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/ticket-intake.md").read_text()
+    content = (tmp_path / ".claude/skills/ticket-intake.md").read_text(encoding="utf-8")
     assert "Jira" in content           # tracker_label in step 2
     assert "FULL" in content           # tracker_project_key in step 2
     assert "Confluence" in content     # doc_platform in step 7
@@ -196,27 +196,27 @@ def test_ticket_intake_skill_references_tracker(tmp_path: Path):
 
 def test_github_issues_tracker_in_ticket_intake(tmp_path: Path):
     generate(_mobile_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/ticket-intake.md").read_text()
+    content = (tmp_path / ".claude/skills/ticket-intake.md").read_text(encoding="utf-8")
     assert "GitHub Issues" in content  # tracker_label in step 2
     assert "my-org/my-app" in content  # tracker_project_key in step 2
 
 
 def test_mobile_skill_mentions_ios_and_android(tmp_path: Path):
     generate(_mobile_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/mobile.md").read_text()
+    content = (tmp_path / ".claude/skills/mobile.md").read_text(encoding="utf-8")
     assert "iOS" in content
     assert "Android" in content
 
 
 def test_queue_testing_skill_mentions_sqs(tmp_path: Path):
     generate(_full_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/queue-testing.md").read_text()
+    content = (tmp_path / ".claude/skills/queue-testing.md").read_text(encoding="utf-8")
     assert "SQS" in content
 
 
 def test_cloud_logs_skill_mentions_gcp(tmp_path: Path):
     generate(_full_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/cloud-logs.md").read_text()
+    content = (tmp_path / ".claude/skills/cloud-logs.md").read_text(encoding="utf-8")
     assert "GCP" in content or "Cloud Logging" in content
 
 
@@ -224,7 +224,7 @@ def test_github_actions_ci_is_generated(tmp_path: Path):
     generate(_full_cfg(), tmp_path)
     ci_file = tmp_path / ".github/workflows/tests.yml"
     assert ci_file.exists()
-    content = ci_file.read_text()
+    content = ci_file.read_text(encoding="utf-8")
     assert "actions/checkout" in content
 
 
@@ -232,7 +232,7 @@ def test_gitlab_ci_is_generated(tmp_path: Path):
     generate(_mobile_cfg(), tmp_path)
     ci_file = tmp_path / ".gitlab-ci.yml"
     assert ci_file.exists()
-    content = ci_file.read_text()
+    content = ci_file.read_text(encoding="utf-8")
     assert "stages:" in content
 
 
@@ -241,14 +241,14 @@ def test_qa_track_script_is_generated_and_runnable(tmp_path: Path):
     script = tmp_path / "scripts/qa_track.py"
     assert script.exists()
     # Verify it's valid Python by compiling it
-    compile(script.read_text(), str(script), "exec")
+    compile(script.read_text(encoding="utf-8"), str(script), "exec")
 
 
 def test_coverage_report_script_is_valid_python(tmp_path: Path):
     generate(_minimal_cfg(), tmp_path)
     script = tmp_path / "scripts/coverage_report.py"
     assert script.exists()
-    compile(script.read_text(), str(script), "exec")
+    compile(script.read_text(encoding="utf-8"), str(script), "exec")
 
 
 # ---------------------------------------------------------------------------
@@ -284,14 +284,14 @@ def test_performance_skill_not_generated_when_none(tmp_path: Path):
 
 def test_performance_skill_k6_contains_k6_content(tmp_path: Path):
     generate(_k6_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/performance.md").read_text()
+    content = (tmp_path / ".claude/skills/performance.md").read_text(encoding="utf-8")
     assert "k6" in content
     assert "http_req_duration" in content
 
 
 def test_performance_skill_locust_contains_locust_content(tmp_path: Path):
     generate(_locust_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/performance.md").read_text()
+    content = (tmp_path / ".claude/skills/performance.md").read_text(encoding="utf-8")
     assert "locust" in content.lower()
     assert "HttpUser" in content
 
@@ -320,26 +320,26 @@ def _espresso_cfg() -> Config:
 
 def test_mobile_skill_detox_mentions_react_native(tmp_path: Path):
     generate(_detox_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/mobile.md").read_text()
+    content = (tmp_path / ".claude/skills/mobile.md").read_text(encoding="utf-8")
     assert "Detox" in content
     assert "React Native" in content
 
 
 def test_mobile_skill_detox_has_setup_commands(tmp_path: Path):
     generate(_detox_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/mobile.md").read_text()
+    content = (tmp_path / ".claude/skills/mobile.md").read_text(encoding="utf-8")
     assert "detox-cli" in content or "npx detox" in content
 
 
 def test_mobile_skill_espresso_mentions_espresso(tmp_path: Path):
     generate(_espresso_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/mobile.md").read_text()
+    content = (tmp_path / ".claude/skills/mobile.md").read_text(encoding="utf-8")
     assert "Espresso" in content
 
 
 def test_mobile_skill_appium_default(tmp_path: Path):
     generate(_mobile_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/mobile.md").read_text()
+    content = (tmp_path / ".claude/skills/mobile.md").read_text(encoding="utf-8")
     assert "Appium" in content
 
 
@@ -351,7 +351,7 @@ def test_prerequisites_generated_for_minimal(tmp_path: Path):
     generate(_minimal_cfg(), tmp_path)
     prereq = tmp_path / "PREREQUISITES.md"
     assert prereq.exists()
-    content = prereq.read_text()
+    content = prereq.read_text(encoding="utf-8")
     assert "Python 3" in content
 
 
@@ -362,7 +362,7 @@ def test_prerequisites_mentions_node_for_playwright(tmp_path: Path):
         test_framework="playwright",
     )
     generate(cfg, tmp_path)
-    content = (tmp_path / "PREREQUISITES.md").read_text()
+    content = (tmp_path / "PREREQUISITES.md").read_text(encoding="utf-8")
     assert "Node.js" in content
 
 
@@ -373,13 +373,13 @@ def test_prerequisites_mentions_java_for_jmeter(tmp_path: Path):
         performance="jmeter",
     )
     generate(cfg, tmp_path)
-    content = (tmp_path / "PREREQUISITES.md").read_text()
+    content = (tmp_path / "PREREQUISITES.md").read_text(encoding="utf-8")
     assert "Java" in content
 
 
 def test_prerequisites_no_node_for_minimal(tmp_path: Path):
     generate(_minimal_cfg(), tmp_path)
-    content = (tmp_path / "PREREQUISITES.md").read_text()
+    content = (tmp_path / "PREREQUISITES.md").read_text(encoding="utf-8")
     assert "Node.js" not in content
 
 

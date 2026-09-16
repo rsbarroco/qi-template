@@ -1,0 +1,56 @@
+# Test Sections — {{ project_name }}
+
+Living cache of section/folder paths in **{{ test_repo_label }}**. Written back by
+bdd-agent after creating a new section. Agents read this before creating cases so they
+place them in the correct location without a live API query.
+
+## Format
+
+Each row maps a feature module path to its section ID in {{ test_repo_label }}.
+
+| Module path | Section ID | {{ test_repo_label }} path | Notes |
+|---|---|---|---|
+| `<domain>/<feature>` | `<SECTION_ID>` | `<Full path in {{ test_repo_label }}>` | Created for ticket `<ticket-key>` |
+
+## How to Use
+
+### Reading (before creating cases)
+
+1. Look up the feature's module path in this table.
+2. If a match exists, use that section ID — do not create a duplicate.
+3. If no match exists, determine the correct parent section from the module hierarchy,
+   create the new section in {{ test_repo_label }}, then add a row here.
+
+### Writing (after bdd-agent creates a section)
+
+Append a row with the exact section ID returned by {{ test_repo_label }}:
+
+```
+| `<domain>/<feature>` | `<SECTION_ID>` | `<Full path>` | Created for `<ticket-key>` |
+```
+
+Commit this file to the branch (do not push to main — the PR includes this update).
+
+## Section Hierarchy
+
+Document the module hierarchy that mirrors your {{ test_repo_label }} folder structure:
+
+```
+{{ project_name }}
+├── <domain-1>/
+│   ├── <feature-a>/
+│   └── <feature-b>/
+└── <domain-2>/
+    └── <feature-c>/
+```
+
+Update this tree as new sections are created.
+
+## Notes
+
+- Never delete a row — deprecated sections get a `[deprecated]` note in the Notes column.
+- The `Module path` column uses forward slashes regardless of the test repo's folder separator.
+- If {{ test_repo_label }} returns a string ID (e.g. `feat-123`), record it verbatim.
+{% if test_repo == 'testrail' %}
+- TestRail section IDs are numeric — record the raw integer.
+{% endif %}
