@@ -9,6 +9,7 @@ description = "Quality Intelligence — scaffold AI-assisted QA projects in seco
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
+license-files = ["LICENSE"]
 dependencies = [
     "typer>=0.12",
     "questionary>=2.0",
