@@ -1,0 +1,19 @@
+# Architecture decision records — {{ project_name }}
+
+One file per decision, MADR style, numbered without gaps. A decision that is not written
+here does not exist for the next person or the next agent. The **Confirmation** section
+says how the decision is checked: a test, a CI job, a script, a rule that a hook enforces.
+A decision with no confirmation is a wish.
+
+```
+docs/decisions/
+  0001-hooks-enforce-the-constitution.md
+  ...
+  TEMPLATE.md
+```
+
+Status flow: `proposed` → `accepted` → `deprecated` or `superseded by [ADR](...)`.
+Never edit an accepted decision's Decision section; supersede it.
+
+A change that alters how the QA process works (a new gate, a new environment, a new
+source of truth) gets an ADR in the same PR.

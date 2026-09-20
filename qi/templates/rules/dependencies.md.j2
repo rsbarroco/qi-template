@@ -1,0 +1,44 @@
+---
+paths:
+  - requirements*.txt
+  - pyproject.toml
+  - package.json
+  - package-lock.json
+  - pnpm-lock.yaml
+  - .github/dependabot.yml
+---
+
+# Rule: Dependencies Track the Newest Stable Release, After Proof
+
+Always update to the newest stable and secure version, but validate first that the
+update breaks nothing. {% if ci == 'github_actions' %}Dependabot proposes (`.github/dependabot.yml`); this{% else %}A bot or a weekly check proposes; this{% endif %}
+rule says what "validate" means and who merges.
+
+## What counts as validated
+
+A dependency PR may be merged by the agent (task `merge-dependency-pr`, level 2 in
+`.claude/autonomy.json`) only when all of these hold on the PR's current head:
+
+1. **CI is green end to end.** A skipped job is not a green job.
+2. **What CI does not exercise was exercised by hand** and the evidence is in the merge
+   record: a browser bump runs the UI suite locally with the new browser; a test-runner
+   bump runs the full suite; a linter bump lints the repo.
+3. **The changelog of a major was read** and any breaking change that touches this repo is
+   handled in the same PR or the bump waits for a PR that handles it.
+
+If any of the three fails, the PR stays open with a comment saying what broke, and the
+fix is a separate PR. Never merge a bump that turns any gate red, and never make a gate
+pass by weakening it.
+
+## What "newest stable" means
+
+- PyPI and npm: the latest non-prerelease release. Prereleases, `next`, `canary`, `rc`
+  are never taken.
+- Runtimes (Python, Node): the newest **LTS** or maintained line, moved in one PR across
+  CI, the version pin and any container image.
+- CI actions: the latest major tag.
+
+## Cadence
+
+Weekly, grouped: minors and patches in one PR, majors alone. Security advisories can
+arrive any day and are handled the same way, first in the queue.

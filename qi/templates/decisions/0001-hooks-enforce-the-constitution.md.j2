@@ -1,0 +1,34 @@
+# 0001 — Enforce the constitution with hooks and autonomy levels
+
+**Status:** accepted
+**Date:** {{ generated_on }}
+**Deciders:** QA engineer
+
+## Context
+
+`CLAUDE.md` and `.claude/rules/` say what the agent may not do: write secrets, edit the
+generated coverage file, force-push, merge, read `.env`. Prose depends on the model
+remembering it under a long context. The rules that matter most are the ones a single
+lapse makes expensive.
+
+## Decision
+
+The non-negotiable rules exist twice: as prose, and as hooks in `.claude/hooks/` wired by
+`.claude/settings.json`. `protect_paths.py` refuses writes to secrets, `COVERAGE.md`,
+`.claude/autonomy.json` and approvals, and enforces the TDD phase (`QI_PHASE`).
+`guard_bash.py` refuses force-push, pushes to main, `--no-verify`, reading `.env`, and any
+command whose task sits below its level in `.claude/autonomy.json`. `stop_gate.py` refuses
+to end a turn with a spec changed and `COVERAGE.md` stale. Levels move only through the
+promotion rule in `AUTONOMY.md`, in a PR the QA engineer opens.
+
+## Consequences
+
+A hook refusal is a rule, not a bug to work around. Adding a gate means adding a hook
+case, not a paragraph. The hooks need Python 3 on the machine that runs the agent, which
+`PREREQUISITES.md` already requires for the scripts.
+
+## Confirmation
+
+`python3 .claude/hooks/<hook>.py --self-test` runs each hook's built-in cases; the
+template that generated this project tests the same hooks as subprocesses on every
+pull request.

@@ -79,6 +79,11 @@ class Config:
         return self.comm_platform != "none"
 
     @property
+    def uses_npm(self) -> bool:
+        """The test framework is installed from npm (Dependabot ecosystem, lockfile)."""
+        return self.test_framework in {"playwright", "cypress", "jest", "webdriverio"}
+
+    @property
     def has_pipeline(self) -> bool:
         """True when the full 4-phase QA agent pipeline is warranted.
 

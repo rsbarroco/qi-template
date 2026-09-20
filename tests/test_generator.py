@@ -94,11 +94,11 @@ ALWAYS_FILES = {
     ".claude/rules/coverage-sync.md",
     ".claude/rules/feedback-loop.md",
     ".claude/rules/reusable-test-data.md",
-    ".claude/skills/ticket-intake.md",
-    ".claude/skills/verify-ticket.md",
-    ".claude/skills/gap-analysis.md",
-    ".claude/skills/sprint-report.md",
-    ".claude/skills/json-schema.md",
+    ".claude/skills/ticket-intake/SKILL.md",
+    ".claude/skills/verify-ticket/SKILL.md",
+    ".claude/skills/gap-analysis/SKILL.md",
+    ".claude/skills/sprint-report/SKILL.md",
+    ".claude/skills/json-schema/SKILL.md",
     "scripts/qa_track.py",
     "scripts/coverage_report.py",
     "scripts/README-qa-activity.md",
@@ -113,32 +113,32 @@ def test_minimal_file_list_contains_always_files():
 
 def test_minimal_file_list_has_no_conditional_files():
     files = set(list_files(_minimal_cfg()))
-    assert ".claude/skills/sql-query.md" not in files
-    assert ".claude/skills/nosql-query.md" not in files
-    assert ".claude/skills/web-ui.md" not in files
-    assert ".claude/skills/mobile.md" not in files
-    assert ".claude/skills/cloud-logs.md" not in files
-    assert ".claude/skills/queue-testing.md" not in files
+    assert ".claude/skills/sql-query/SKILL.md" not in files
+    assert ".claude/skills/nosql-query/SKILL.md" not in files
+    assert ".claude/skills/web-ui/SKILL.md" not in files
+    assert ".claude/skills/mobile/SKILL.md" not in files
+    assert ".claude/skills/cloud-logs/SKILL.md" not in files
+    assert ".claude/skills/queue-testing/SKILL.md" not in files
     assert ".github/workflows/tests.yml" not in files
 
 
 def test_full_config_includes_all_conditional_skills():
     files = set(list_files(_full_cfg()))
-    assert ".claude/skills/sql-query.md" in files
-    assert ".claude/skills/nosql-query.md" in files
-    assert ".claude/skills/web-ui.md" in files
-    assert ".claude/skills/mobile.md" in files
-    assert ".claude/skills/cloud-logs.md" in files
-    assert ".claude/skills/queue-testing.md" in files
+    assert ".claude/skills/sql-query/SKILL.md" in files
+    assert ".claude/skills/nosql-query/SKILL.md" in files
+    assert ".claude/skills/web-ui/SKILL.md" in files
+    assert ".claude/skills/mobile/SKILL.md" in files
+    assert ".claude/skills/cloud-logs/SKILL.md" in files
+    assert ".claude/skills/queue-testing/SKILL.md" in files
     assert ".github/workflows/tests.yml" in files
 
 
 def test_mobile_config_includes_mobile_not_web_ui(tmp_path):
     files = set(list_files(_mobile_cfg()))
-    assert ".claude/skills/mobile.md" in files
-    assert ".claude/skills/web-ui.md" not in files
-    assert ".claude/skills/sql-query.md" not in files
-    assert ".claude/skills/nosql-query.md" in files       # DynamoDB selected
+    assert ".claude/skills/mobile/SKILL.md" in files
+    assert ".claude/skills/web-ui/SKILL.md" not in files
+    assert ".claude/skills/sql-query/SKILL.md" not in files
+    assert ".claude/skills/nosql-query/SKILL.md" in files       # DynamoDB selected
     assert ".gitlab-ci.yml" in files
     assert ".github/workflows/tests.yml" not in files
 
@@ -188,7 +188,7 @@ def test_claude_md_full_has_sql_and_nosql(tmp_path: Path):
 
 def test_ticket_intake_skill_references_tracker(tmp_path: Path):
     generate(_full_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/ticket-intake.md").read_text(encoding="utf-8")
+    content = (tmp_path / ".claude/skills/ticket-intake/SKILL.md").read_text(encoding="utf-8")
     assert "Jira" in content           # tracker_label in step 2
     assert "FULL" in content           # tracker_project_key in step 2
     assert "Confluence" in content     # doc_platform in step 7
@@ -196,27 +196,27 @@ def test_ticket_intake_skill_references_tracker(tmp_path: Path):
 
 def test_github_issues_tracker_in_ticket_intake(tmp_path: Path):
     generate(_mobile_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/ticket-intake.md").read_text(encoding="utf-8")
+    content = (tmp_path / ".claude/skills/ticket-intake/SKILL.md").read_text(encoding="utf-8")
     assert "GitHub Issues" in content  # tracker_label in step 2
     assert "my-org/my-app" in content  # tracker_project_key in step 2
 
 
 def test_mobile_skill_mentions_ios_and_android(tmp_path: Path):
     generate(_mobile_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/mobile.md").read_text(encoding="utf-8")
+    content = (tmp_path / ".claude/skills/mobile/SKILL.md").read_text(encoding="utf-8")
     assert "iOS" in content
     assert "Android" in content
 
 
 def test_queue_testing_skill_mentions_sqs(tmp_path: Path):
     generate(_full_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/queue-testing.md").read_text(encoding="utf-8")
+    content = (tmp_path / ".claude/skills/queue-testing/SKILL.md").read_text(encoding="utf-8")
     assert "SQS" in content
 
 
 def test_cloud_logs_skill_mentions_gcp(tmp_path: Path):
     generate(_full_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/cloud-logs.md").read_text(encoding="utf-8")
+    content = (tmp_path / ".claude/skills/cloud-logs/SKILL.md").read_text(encoding="utf-8")
     assert "GCP" in content or "Cloud Logging" in content
 
 
@@ -273,25 +273,25 @@ def _locust_cfg() -> Config:
 
 def test_performance_skill_generated_when_selected(tmp_path: Path):
     generate(_k6_cfg(), tmp_path)
-    skill = tmp_path / ".claude/skills/performance.md"
+    skill = tmp_path / ".claude/skills/performance/SKILL.md"
     assert skill.exists()
 
 
 def test_performance_skill_not_generated_when_none(tmp_path: Path):
     generate(_minimal_cfg(), tmp_path)
-    assert not (tmp_path / ".claude/skills/performance.md").exists()
+    assert not (tmp_path / ".claude/skills/performance/SKILL.md").exists()
 
 
 def test_performance_skill_k6_contains_k6_content(tmp_path: Path):
     generate(_k6_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/performance.md").read_text(encoding="utf-8")
+    content = (tmp_path / ".claude/skills/performance/SKILL.md").read_text(encoding="utf-8")
     assert "k6" in content
     assert "http_req_duration" in content
 
 
 def test_performance_skill_locust_contains_locust_content(tmp_path: Path):
     generate(_locust_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/performance.md").read_text(encoding="utf-8")
+    content = (tmp_path / ".claude/skills/performance/SKILL.md").read_text(encoding="utf-8")
     assert "locust" in content.lower()
     assert "HttpUser" in content
 
@@ -320,26 +320,26 @@ def _espresso_cfg() -> Config:
 
 def test_mobile_skill_detox_mentions_react_native(tmp_path: Path):
     generate(_detox_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/mobile.md").read_text(encoding="utf-8")
+    content = (tmp_path / ".claude/skills/mobile/SKILL.md").read_text(encoding="utf-8")
     assert "Detox" in content
     assert "React Native" in content
 
 
 def test_mobile_skill_detox_has_setup_commands(tmp_path: Path):
     generate(_detox_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/mobile.md").read_text(encoding="utf-8")
+    content = (tmp_path / ".claude/skills/mobile/SKILL.md").read_text(encoding="utf-8")
     assert "detox-cli" in content or "npx detox" in content
 
 
 def test_mobile_skill_espresso_mentions_espresso(tmp_path: Path):
     generate(_espresso_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/mobile.md").read_text(encoding="utf-8")
+    content = (tmp_path / ".claude/skills/mobile/SKILL.md").read_text(encoding="utf-8")
     assert "Espresso" in content
 
 
 def test_mobile_skill_appium_default(tmp_path: Path):
     generate(_mobile_cfg(), tmp_path)
-    content = (tmp_path / ".claude/skills/mobile.md").read_text(encoding="utf-8")
+    content = (tmp_path / ".claude/skills/mobile/SKILL.md").read_text(encoding="utf-8")
     assert "Appium" in content
 
 
@@ -388,7 +388,7 @@ def test_dossier_templates_and_intake_step_are_generated(tmp_path):
     assert (tmp_path / "qa/dossiers/README.md").exists()
     template = (tmp_path / "qa/dossiers/TEMPLATE.md").read_text()
     assert "Traversal log" in template and "NOT FOUND" in template
-    intake = (tmp_path / ".claude/skills/ticket-intake.md").read_text()
+    intake = (tmp_path / ".claude/skills/ticket-intake/SKILL.md").read_text()
     assert "Step 2 — Dossier" in intake
     assert "at most 8 fetched items" in intake
     assert "tickets/<KEY>.md" in intake          # tracker == none branch
@@ -398,5 +398,5 @@ def test_dossier_templates_and_intake_step_are_generated(tmp_path):
 
 def test_intake_dossier_names_the_tracker_api(tmp_path):
     generate(_full_cfg(), tmp_path)   # jira
-    intake = (tmp_path / ".claude/skills/ticket-intake.md").read_text()
+    intake = (tmp_path / ".claude/skills/ticket-intake/SKILL.md").read_text()
     assert "issuelinks" in intake and "tickets/<KEY>.md" not in intake

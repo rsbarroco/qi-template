@@ -1,0 +1,80 @@
+# Autonomy levels — {{ project_name }}
+
+What the agent may do on its own, per task, and how a task earns more. The current level
+of every task is in `.claude/autonomy.json`; the hooks in `.claude/hooks/` enforce it, so
+this document explains the numbers rather than asking anyone to remember them.
+
+## Levels
+
+| Level | Meaning | What the agent does |
+|---|---|---|
+| 0 | Propose only | Drafts the artefact and stops. A human executes. |
+| 1 | Execute after explicit approval | Drafts, waits for an explicit yes in the session, then executes and reports with evidence. |
+| 2 | Execute and report | Executes without asking, reports what it did with evidence, and the human reviews before anything leaves the repo. |
+| 3 | Autonomous with review afterwards | Executes, commits or opens the PR, and the review happens on the result. |
+
+## Current levels
+
+| Task | Level | Why here |
+|---|---|---|
+| `dossier` | 2 | Read-only over the ticket's material; the traversal is logged |
+| `case-authoring` | 2 | A draft cannot run without the approval (ticket-intake Step 5) |
+| `case-approve` | 0 | Approval is the hard gate of the intake; never the agent's |
+| `execute-on-dev` | 2 | Dev is a valid mutation target; evidence is required |
+| `execute-on-staging` | 1 | Shared environment; one run per approval |
+| `code-change` | 2 | Covered by tests and lint in CI |
+| `test-authoring` | 3 | Red-first is the norm; a wrong test fails loudly |
+{% if tracker != 'none' %}
+| `tracker-transition` | 1 | Moving a {{ tracker_label }} ticket is visible to the whole team |
+| `bug-report` | 1 | A bug in {{ tracker_label }} reaches developers; the QA engineer confirms the reproduction first |
+{% endif %}
+{% if has_comm_platform %}
+| `comm-post` | 0 | {{ comm_platform_label }} messages cannot be unsent; the QA engineer posts |
+{% endif %}
+{% if doc_platform != 'none' %}
+| `doc-publish` | 1 | {{ doc_label }} pages are shared; show old → new first |
+{% endif %}
+| `report-generate` | 2 | Markdown to disk; publishing is a separate task |
+| `open-pr` | 3 | Reversible; CI reviews it |
+| `merge-pr` | 0 | Merging is a human-only action (CLAUDE.md 0a) |
+| `merge-dependency-pr` | 2 | The one exception to `merge-pr`: a dependency bump, after the validation in `.claude/rules/dependencies.md`, with the evidence in the merge record |
+| `coverage-sync` | 3 | Generated file, checked by the stop hook and CI |
+
+## Promotion
+
+A task moves up one level when all of the following hold, and only then:
+
+1. The skill or workflow that performs it has an eval suite with at least 3 cases, one
+   of which is a refusal case.
+2. Over the last **30 runs**, the graders and the human labels agree on **≥ 90 %** of
+   runs, and the pass rate is **≥ 95 %**.
+3. No gate violation (hook block, CI red caused by the agent) in the same window.
+4. The QA engineer changes the number in `.claude/autonomy.json` in a PR that cites the
+   eval report. The agent never edits that file (the `protect_paths` hook refuses).
+
+Tasks capped by consequence (`case-approve`, `merge-pr`{% if has_comm_platform %}, `comm-post`{% endif %},
+`execute-on-staging` at 2) stay capped whatever the numbers say.
+
+## Demotion
+
+Any single gate violation drops the task one level immediately, recorded in the same
+file with the date and the run that caused it. It climbs back through the promotion
+rule, not through time.
+
+## Session override
+
+`QI_AUTONOMY_OVERRIDE="execute-on-staging=2"` raises a level for one session, for the
+QA engineer sitting next to the agent. It is never set in CI or in a script.
+
+## TDD phases
+
+`QI_PHASE=red` lets the agent edit only tests; `QI_PHASE=implement` freezes tests. Unset
+means both are open. The `protect_paths` hook enforces it.
+
+## Checking the hooks
+
+```bash
+python3 .claude/hooks/protect_paths.py --self-test
+python3 .claude/hooks/guard_bash.py --self-test
+python3 .claude/hooks/stop_gate.py --self-test
+```

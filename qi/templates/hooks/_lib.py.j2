@@ -1,0 +1,82 @@
+"""Shared helpers for the hooks in .claude/hooks. Standard library only.
+
+A hook reads one JSON object from stdin (Claude Code's hook input), decides, and either
+exits 0 (allow) or exits 2 with the reason on stderr (block; the agent sees the reason).
+Every hook exposes `decide(payload, env) -> str | None` so it can be tested without a
+process, and `--self-test` runs its built-in cases.
+"""
+from __future__ import annotations
+
+import json
+import os
+import sys
+from pathlib import Path
+
+LEVELS = [
+    "0 propose only",
+    "1 execute after an explicit approval",
+    "2 execute and report",
+    "3 autonomous with review afterwards",
+]
+
+
+def read_input() -> dict:
+    try:
+        return json.loads(sys.stdin.read() or "{}")
+    except (json.JSONDecodeError, ValueError):
+        return {}
+
+
+def project_dir(payload: dict, env: dict | None = None) -> Path:
+    env = os.environ if env is None else env
+    return Path(env.get("CLAUDE_PROJECT_DIR") or payload.get("cwd") or os.getcwd())
+
+
+def block(reason: str) -> None:
+    """Exit 2 blocks the tool call; Claude Code shows stderr to the agent."""
+    sys.stderr.write(f"[qi hook] {reason}\n")
+    sys.exit(2)
+
+
+def load_autonomy(root: Path) -> dict:
+    file = root / ".claude" / "autonomy.json"
+    if not file.exists():
+        return {}
+    try:
+        return json.loads(file.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, ValueError):
+        return {}
+
+
+def autonomy_level(root: Path, task: str, env: dict | None = None) -> int:
+    """Level for a task: QI_AUTONOMY_OVERRIDE="task=level,task=level" wins for one session."""
+    env = os.environ if env is None else env
+    for pair in (env.get("QI_AUTONOMY_OVERRIDE") or "").split(","):
+        name, _, level = pair.strip().partition("=")
+        if name == task and level.strip().isdigit():
+            return int(level)
+    tasks = load_autonomy(root).get("tasks") or {}
+    try:
+        return int(tasks.get(task, 0))
+    except (TypeError, ValueError):
+        return 0
+
+
+def run(decide, self_test_cases=None) -> None:
+    """Entry point shared by the hooks: --self-test or one decision on stdin."""
+    if "--self-test" in sys.argv[1:]:
+        failures = []
+        for payload, env, expect_block in self_test_cases or []:
+            verdict = decide(payload, env)
+            if bool(verdict) != expect_block:
+                failures.append((payload, verdict))
+        if failures:
+            for payload, verdict in failures:
+                sys.stderr.write(f"self-test failed: {json.dumps(payload)} -> {verdict!r}\n")
+            sys.exit(1)
+        print(f"self-test ok ({len(self_test_cases or [])} cases)")
+        return
+    payload = read_input()
+    reason = decide(payload, dict(os.environ))
+    if reason:
+        block(reason)

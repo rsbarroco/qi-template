@@ -80,3 +80,20 @@ def test_no_specs_dir_reports_zero_without_crashing(render, run_script):
     out = run_script(project, "scripts/coverage_report.py")
     assert out.returncode == 0, out.stderr
     assert "Total cases : 0" in out.stdout
+
+
+def test_verify_fails_when_coverage_md_is_stale_and_writes_nothing(render, run_script):
+    project = render()
+    _seed(project)
+    before = (project / "COVERAGE.md").read_text()
+    out = run_script(project, "scripts/coverage_report.py", "--verify")
+    assert out.returncode == 1 and "COVERAGE.md is stale" in out.stdout
+    assert (project / "COVERAGE.md").read_text() == before
+
+
+def test_verify_passes_after_a_regeneration(render, run_script):
+    project = render()
+    _seed(project)
+    run_script(project, "scripts/coverage_report.py")
+    out = run_script(project, "scripts/coverage_report.py", "--verify")
+    assert out.returncode == 0 and "in sync" in out.stdout

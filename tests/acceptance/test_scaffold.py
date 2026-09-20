@@ -11,7 +11,7 @@ from qi.config import Config
 
 scenarios("scaffold.feature")
 
-CORE_SKILLS = {"ticket-intake.md", "verify-ticket.md", "gap-analysis.md", "sprint-report.md", "json-schema.md", "fix-tests.md", "diagnose.md", "report-bug.md"}
+CORE_SKILLS = {"ticket-intake", "verify-ticket", "gap-analysis", "sprint-report", "json-schema", "fix-tests", "diagnose", "report-bug"}
 
 
 @given(parsers.parse('a team that tracks work in Jira project "{key}"'), target_fixture="config")
@@ -69,7 +69,7 @@ def no_ci(project):
 
 @then(parsers.parse('the mobile skill mentions "{framework}"'))
 def mobile_mentions(project, framework):
-    assert framework in (project / ".claude/skills/mobile.md").read_text()
+    assert framework in (project / ".claude/skills/mobile/SKILL.md").read_text()
 
 
 @then(parsers.parse('the output lists "{name}"'))

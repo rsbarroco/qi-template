@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+"""PreToolUse (Edit|Write|MultiEdit). Deterministic guards on where the agent may write.
+
+Every rule here exists as prose in CLAUDE.md or .claude/rules; this is the copy that does
+not depend on the model remembering it. TDD phases: QI_PHASE=red lets only tests change,
+QI_PHASE=implement freezes tests, unset leaves both open (AUTONOMY.md).
+"""
+from __future__ import annotations
+
+import os
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _lib import project_dir, run  # noqa: E402
+
+RULES = [
+    (re.compile(r"(^|/)\.env(\..*)?$"),
+     "secrets live in .env and are never written by the agent (.env.example is the contract)"),
+    (re.compile(r"^COVERAGE\.md$"),
+     "COVERAGE.md is generated: run python scripts/coverage_report.py instead of editing it (.claude/rules/coverage-sync.md)"),
+    (re.compile(r"^\.claude/autonomy\.json$"),
+     "only the QA engineer changes autonomy levels, in a PR that cites the eval report (AUTONOMY.md)"),
+    (re.compile(r"^qa/dossiers/.*/approved$"),
+     "only the QA engineer approves cases; the agent never writes the approval (ticket-intake Step 5)"),
+]
+
+TEST_PATH = re.compile(r"(^|/)(tests?|__tests__|spec|features)/")
+TEST_FILE = re.compile(r"(^|/)(test_[^/]*\.py|[^/]*_test\.(py|go|rb)|[^/]*\.(test|spec)\.[cm]?[jt]sx?|[^/]*\.feature|[^/]*\.robot)$")
+CODE_FILE = re.compile(r"\.(py|[cm]?[jt]sx?|java|kt|go|rb|cs|rs)$")
+
+
+def is_test(rel: str) -> bool:
+    return bool(TEST_PATH.search(rel) or TEST_FILE.search(rel))
+
+
+def decide(payload: dict, env: dict) -> str | None:
+    tool_input = payload.get("tool_input") or {}
+    target = tool_input.get("file_path") or tool_input.get("path")
+    if not target:
+        return None
+    root = project_dir(payload, env)
+    try:
+        rel = os.path.relpath(Path(root, target).resolve(), root.resolve()).replace("\\", "/")
+    except ValueError:  # different drive on Windows
+        rel = str(target).replace("\\", "/")
+    for pattern, why in RULES:
+        if pattern.search(rel):
+            return f"blocked edit of {rel}: {why}"
+    phase = (env.get("QI_PHASE") or "").lower()
+    if phase == "red" and not is_test(rel) and CODE_FILE.search(rel):
+        return f"QI_PHASE=red: only tests may change now; {rel} is implementation. Write the failing test first."
+    if phase == "implement" and is_test(rel):
+        return f"QI_PHASE=implement: tests are frozen while implementing; {rel} is a test. If the test is wrong, switch back to QI_PHASE=red and say why."
+    return None
+
+
+SELF_TEST = [
+    ({"tool_input": {"file_path": ".env"}}, {}, True),
+    ({"tool_input": {"file_path": ".env.local"}}, {}, True),
+    ({"tool_input": {"file_path": "COVERAGE.md"}}, {}, True),
+    ({"tool_input": {"file_path": ".claude/autonomy.json"}}, {}, True),
+    ({"tool_input": {"file_path": "specs/checkout.md"}}, {}, False),
+    ({"tool_input": {"file_path": "src/app.py"}}, {"QI_PHASE": "red"}, True),
+    ({"tool_input": {"file_path": "tests/test_app.py"}}, {"QI_PHASE": "red"}, False),
+    ({"tool_input": {"file_path": "tests/test_app.py"}}, {"QI_PHASE": "implement"}, True),
+    ({"tool_input": {"file_path": "src/app.py"}}, {"QI_PHASE": "implement"}, False),
+    ({"tool_input": {}}, {}, False),
+]
+
+if __name__ == "__main__":
+    run(decide, SELF_TEST)

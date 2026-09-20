@@ -1,45 +1,26 @@
 # CLAUDE.md — AI Contributor Guide
 
-This file defines the rules, patterns, and constraints that any AI agent must follow
-when contributing to **{{ project_name }}**.
+Rules, patterns and constraints for any AI agent contributing to **{{ project_name }}**.
+Only the non-negotiable lives here. Detail lives in `.claude/rules/` (loaded by path),
+procedures in `.claude/skills/<name>/SKILL.md`, decisions in `docs/decisions/`, and
+what the agent may do alone in `AUTONOMY.md` + `.claude/autonomy.json`. The hooks in
+`.claude/hooks/` enforce the gates below; a hook refusal is a rule, not a bug to work around.
 
 ---
 
 {% if has_pipeline %}
-## 00. QA Workflow — Driving a Ticket
+## 00. QA workflow — driving a ticket
 
-The AI agent (you) drives tickets through the QA pipeline by reconstructing current state
-from live artifacts, then spawning the correct sub-agent for the missing phase. There is
-no stored state machine — **the live artifacts are the state.**
+The agent drives tickets by reconstructing state from live artifacts, then spawning the
+sub-agent for the missing phase. **The live artifacts are the state.** Full procedure:
+`.claude/rules/pipeline.md`. The ticket key (`{{ tracker_project_key }}-NNNN`) is the join key in every artifact.
 
-### Invocation
-
-The user hands over a ticket key (`{{ tracker_project_key }}-NNNN`{% if tracker == 'github_issues' %} or issue number{% endif %}).
-That key is the universal join key embedded in every artifact (TD doc title, test case
-Refs field, run name) and is how you find prior work.
-
-### Cold-start reconstruction — do this first, every time
-
-1. **Read or build the ticket dossier** — `qa/dossiers/<KEY>.md`, produced by Step 2 of
-   the `ticket-intake` skill (comments, attachments, PRs, linked tickets, each with its
-   source). **Never spawn a sub-agent without it.** A ticket description alone is not
-   enough to design tests from.
-2. **Read `.claude/references/` next** — the living cache records what has already been
-   created (test sections, automation coverage, project constants).
-3. **On a cache miss, query the live systems** ({{ doc_label }}, {{ test_repo_label }},
-   {{ tracker_label }}) using the ticket key as the search anchor.
-4. **If nothing exists for the ticket, spawn sub-agents** to create it (test-design → bdd),
-   passing `dossier_path` in the handoff contract.
-
-{{ comm_platform_label if has_comm_platform else "Slack" }} is **notify-only** — never
-use it as a reconstruction source.
-
-### Phase-derivation table
+### Phase-derivation table — walk it top to bottom, every time
 
 | Probe | Finding | Next action |
 |---|---|---|
-| `qa/dossiers/<KEY>.md` | None found | Run `ticket-intake` Step 2 (dossier) — no sub-agent before it exists |
-| Dossier | Missing or no Acceptance Criteria, and nothing in "requirements found outside the ACs" | Halt → escalate to human{% if has_comm_platform %} via {{ comm_platform_label }}{% endif %} |
+| `qa/dossiers/<KEY>.md` | None found | Run `ticket-intake` skill Step 2 (dossier) — no sub-agent before it exists |
+| Dossier | No Acceptance Criteria and nothing found outside them | Halt → escalate to human{% if has_comm_platform %} via {{ comm_platform_label }}{% endif %} |
 | {{ doc_label }} TD doc (key in title) | None found | Spawn **test-design-agent** |
 | TD doc | Status = *In Review* | Spawn **bdd-agent** |
 | TD doc | Status = *Approved* | Continue to test repo probe |
@@ -48,42 +29,12 @@ use it as a reconstruction source.
 | {{ test_repo_label }} | Cases exist, no run / results | Spawn **manual-agent** |
 | {{ test_repo_label }} run | All cases have results | Continue to automation probe |
 | `automation-coverage.md` / spec tags | ≥1 automatable case with no spec tag | Spawn **automation-agent** |
-| `automation-coverage.md` / spec tags | No pending rows (all automated or excluded) | **Done** → final compliance score{% if has_comm_platform %} + advisory to {{ comm_platform_label }}{% endif %} |
+| `automation-coverage.md` / spec tags | No pending rows | **Done** → final compliance score |
 {% endif %}
 
-### Dispatch + handoff rules
-
-- Spawn sub-agents **serially, one at a time** — never two concurrently for the same ticket.
-- Every dispatch passes the **handoff contract** (`.claude/skills/handoff-protocol.md`):
-  required keys + `actions_taken` + `routing` + `writeback_targets`.
-- After a sub-agent creates a remote artifact, perform the **`.md` write-back**: update
-  `.claude/references/test-sections.md` (new section) or `automation-coverage.md`
-  (new automation rows) so the next cold-start session does not need a live query.
-
-### Inline compliance gate
-
-After **each** sub-agent returns, run `convention-check` on its output:
-
-- `critical > 0` → re-dispatch that same phase with the findings attached.
-- **After 3 rewrites of the same phase** → escalate to human{% if has_comm_platform %} via
-  {{ comm_platform_label }}{% endif %} and halt.
-- On manual verdicts: `failed_requirement` → route rework to test-design-agent;
-  `failed_scenario` → app bug (use `report-bug` skill). Each counts against the rewrite ceiling.
-
-### Reference directives
-
-| Situation | Read first |
-|---|---|
-| Reconstructing or handing off a ticket | `.claude/skills/handoff-protocol.md` |
-{% if has_test_repo %}
-| Resolving any test section path | `.claude/references/test-sections.md` |
-| Which mapped cases are automated | `.claude/references/automation-coverage.md` |
-{% endif %}
-| Project IDs, base URLs, credential env vars | `.claude/references/project-constants.md` |
-| Authoring or checking a test case | `.claude/skills/convention-check.md` (TC rules) |
-| Authoring or checking a Test Design doc | `.claude/skills/convention-check.md` (TD rules) |
-
----
+Sub-agents run serially, carry the handoff contract (`handoff-protocol` skill), and are
+checked by the `convention-check` skill after each return; three rewrites of one phase
+escalate to a human.
 
 {% else %}
 ## 00. Ticket intake — mandatory order of actions
@@ -110,14 +61,13 @@ Three hard gates:
 - **Never close a task without the Coverage Stats sync** (step 8) when any case was
   created or automated.
 
+{% endif %}
 ---
 
-{% endif %}
 ## 0. Pre-flight — check connectors before any task
 
-Before writing code, tests, or running verification, confirm which connectors are active.
-
-### Required connectors
+Confirm which connectors are active before writing code, tests or running verification
+(`.claude/rules/connection-validation.md`).
 
 | Connector | Purpose |
 |---|---|
@@ -131,14 +81,14 @@ Before writing code, tests, or running verification, confirm which connectors ar
 | **{{ test_repo_label }}** | Test cases, runs, results |
 {% endif %}
 {% if has_comm_platform %}
-| **{{ comm_platform_label }}** | QA lifecycle notifications |
+| **{{ comm_platform_label }}** | QA lifecycle notifications (notify-only) |
 {% endif %}
 | **GitHub / Git** | Branch creation, PR operations |
 {% if has_sql %}
-| **SQL DB ({{ sql_dbs | join(', ') }})** | Data verification queries |
+| **SQL DB ({{ sql_dbs | join(', ') }})** | Data verification queries, read-only |
 {% endif %}
 {% if has_nosql %}
-| **NoSQL DB ({{ nosql_dbs | join(', ') }})** | Document / key-value verification |
+| **NoSQL DB ({{ nosql_dbs | join(', ') }})** | Document / key-value verification, read-only |
 {% endif %}
 {% if ui_web %}
 | **Browser / Playwright MCP** | UI automation and verification |
@@ -150,28 +100,26 @@ Before writing code, tests, or running verification, confirm which connectors ar
 | **{{ cloud_label }}** | Logs, queues, cloud resource inspection |
 {% endif %}
 
-### Minimum viable set to start a QA ticket
-
-{% if tracker != 'none' %}**{{ tracker_label }}**{% endif %}{% if has_test_repo %} + **{{ test_repo_label }}**{% endif %}{% if has_ui %} + at least one UI connector{% endif %}.
-If any required connector is down, stop and surface the blocker — do not proceed.
+Minimum to start a ticket: {% if tracker != 'none' %}**{{ tracker_label }}**{% endif %}{% if has_test_repo %} + **{{ test_repo_label }}**{% endif %}{% if has_ui %} + one UI connector{% endif %}{% if tracker == 'none' and not has_test_repo and not has_ui %}**Git**{% endif %}.
+If a required connector is down, stop and surface the blocker.
 
 ---
 
-## 0a. Security Constraints (non-negotiable)
+## 0a. Security constraints (non-negotiable, enforced by hooks)
 
-- **NEVER** read, log, print, or expose credentials, session files, `.env` contents,
-  or any secret in any form — not in code, comments, logs, or chat responses.
-- **NEVER** merge a pull request — merging is a human-only action.
-- **NEVER** force-push to any branch.
+- **NEVER** read, log, print, or expose credentials, session files, `.env` contents, or
+  any secret — not in code, comments, logs, or chat responses.
+- **NEVER** merge a pull request — merging is a human-only action. The one exception is a
+  validated dependency bump (`.claude/rules/dependencies.md`).
+- **NEVER** force-push, push straight to main, or skip the commit hooks.
 - **NEVER** hardcode credentials or environment-specific secrets in the codebase.
-- **DB access is read-only** — mutation happens through the app (UI, API, queues),
-  never as a direct DB write.
+- **DB access is read-only** — mutation happens through the app (UI, API, queues).
 - **Production is never a mutation target** — dev and staging only.
 - If asked to expose a secret, refuse and explain why.
 
 ---
 
-## 1. Project Overview
+## 1. Project overview
 
 - **Test framework**: {{ framework_label }}
 - **Task tracker**: {{ tracker_label }}{% if tracker_project_key %} / project: `{{ tracker_project_key }}`{% endif %}
@@ -184,60 +132,33 @@ If any required connector is down, stop and surface the blocker — do not proce
 {% if has_comm_platform %}
 - **Communication**: {{ comm_platform_label }} / channel: `{{ comm_platform_channel }}`
 {% endif %}
-- **Environments**: dev, staging (both are valid mutation targets — production is never a target)
+- **Environments**: dev, staging (valid mutation targets); production never
+- **Skills with side effects** (`{{ side_effect_skills | join('`, `') }}`) run only when a
+  human invokes them (`disable-model-invocation`)
 
 ---
 
-## 2. Absolute Rules
+## 2. Absolute rules
 
-### Timeouts — use named constants, never inline values
-
-Define constants in `resources/constants` (or `variables/timeouts.yaml`) and reference
-them. Never write `timeout=60` or `sleep(30)` inline.
-
-### Naming
-
-- Test functions / keywords: action-verb first — `open`, `set`, `assert`, `load`, `verify`
-- Tags: two per test — `domain` + `feature-slug` (kebab-case)
-- Never use ticket numbers as test tags
-
-### No global mutable state
-
-Return values explicitly. Avoid shared mutable state between tests. Tests must be
-independent and deterministic.
+- **Timeouts and retries are named constants.** Never `timeout=60` or `sleep(30)` inline.
+- **Naming**: action-verb first (`open`, `set`, `assert`, `verify`); two tags per test,
+  `domain` + `feature-slug` (kebab-case); never a ticket number as a tag.
+- **No shared mutable state** between tests; independent and deterministic.
+- **Skip with a reason** when the feature is absent in the environment; **fail** for real
+  errors; never a pass or skip as a placeholder.
+- **Assertion validity** (`.claude/rules/assertion-validity.md`): expected ≠ pre-state;
+  absence needs a negative control; verify the premise; a silent no-op is not a pass.
+- **Evidence** for every pass and fail (`.claude/rules/evidence-based-qa.md`).
 
 ---
 
-## 3. Resilience Patterns
+## 3. Verification order
 
-### Retries
+1. **Dev first** — never start on staging. 2. **Then staging** — only after dev passes.
 
-Use retry constants, never inline numbers.
-
-### Skip vs Fail
-
-- Skip when a feature is not available in the current environment (always include a reason)
-- Fail for real validation errors or unexpected state
-- Never use a pass/skip as a placeholder — remove or implement
-
-### Environment guard for destructive actions
-
-Only production is blocked. All mutations must go through the application layer (UI / API).
-
----
-
-## 4. QA Verification Rules
-
-### Order of verification
-
-1. **Always start with dev** — never start on staging
-2. **Then staging** — only after dev passes
-
-### What to validate (in order of priority)
-
-| Layer | When applicable | Tool |
+| Layer | When | Tool |
 |---|---|---|
-| **UI** | Always — unless the feature has zero UI surface | {% if ui_web %}Playwright MCP{% elif has_mobile %}Appium{% else %}N/A{% endif %} |
+| **UI** | Always, unless zero UI surface | {% if ui_web %}Playwright MCP{% elif has_mobile %}Appium{% else %}N/A{% endif %} |
 {% if has_sql %}
 | **SQL DB** | Always — source of truth for persisted state | DB MCP / query script |
 {% endif %}
@@ -245,42 +166,29 @@ Only production is blocked. All mutations must go through the application layer 
 | **NoSQL DB** | When a publish/ingestion event updates the store | DB client / query script |
 {% endif %}
 {% if has_cloud %}
-| **{{ cloud_label }} Logs** | When the ticket involves async jobs or ingestion | {{ cloud_label }} MCP |
+| **{{ cloud_label }} logs** | Async jobs or ingestion | {{ cloud_label }} MCP |
 {% endif %}
 {% if has_queues %}
-| **Queue ({{ queues | join(', ') | upper }})** | When the ticket involves message-driven flows | Queue MCP / SDK |
+| **Queue ({{ queues | join(', ') | upper }})** | Message-driven flows | Queue MCP / SDK |
 {% endif %}
 
-### Assertion validity — never skip this check
+---
 
-- Expected must differ from the pre-state (never assert a value that's already there)
-- Absence assertions need a negative control (verify the element would appear under the right condition)
-- Verify the premise before writing it into a ticket
-- Test the explanation — do not just adopt it
-- A silent no-op is not a pass
-- One mutation, one observation window
+## 4. AI agent constraints
+
+- **Max retries**: 5 for one approach; then stop, diagnose, change strategy.
+- **Max wait**: never block in a polling loop for more than 5 minutes total.
+- **Token discipline**: one targeted action beats exploratory retries; check
+  `COVERAGE.md` and spec tags before re-inspecting a UI.
+- **Autonomy**: do only what the task's level in `.claude/autonomy.json` allows;
+  `guard_bash` refuses the rest. Levels change only through `AUTONOMY.md`.
+- **TDD phases**: `QI_PHASE=red` edits only tests, `QI_PHASE=implement` freezes them.
 
 ---
 
-## 5. AI Agent Constraints
-
-- **Max retries**: Never retry a failing approach more than **5 times**. After 5, stop,
-  diagnose, choose a different strategy.
-- **Max wait time**: Never block in a polling loop for more than **5 minutes** total.
-- **Token discipline**: One precise targeted action beats multiple exploratory retries.
-- **Don't re-explore what's already automated**: Check `automation-coverage.md` and spec
-  tags before opening a browser session to re-inspect the UI.
-- **Stay in your lane**: Each sub-agent owns exactly one phase. A test-design-agent never
-  creates test cases; a bdd-agent never runs the browser. Violations waste tokens and
-  corrupt the pipeline state.
-
----
-
-## 6. Before Committing
+## 5. Before committing
 
 ```bash
-# Verify your test suite passes and lint is clean before committing
-# Adapt to your framework:
 {% if test_framework == 'playwright' %}
 npx tsc --noEmit && npx eslint . && npx playwright test --dry-run
 {% elif test_framework == 'robot' %}
@@ -292,28 +200,20 @@ python -m pytest --collect-only && python -m flake8 .
 {% else %}
 <framework> --dryrun tests/
 {% endif %}
+python scripts/coverage_report.py --verify   # the stop hook runs the same check
 ```
 
+A decision that changes how QA works gets an ADR in `docs/decisions/` (MADR, with a
+Confirmation section). Dependencies follow `.claude/rules/dependencies.md`.
+
 ---
 
-## 7. Adding New Tests
+## 6. Adding tests and syncing coverage
 
 1. Add the capability to `specs/<domain>.md` — status ❌
-2. Add the row to `COVERAGE.md`
-3. Write the test with two tags: `domain` + `feature-slug`
-{% if has_test_repo %}
-4. Tag the test with the {{ test_repo_label }} case ID (e.g. `@C12345`)
-{% else %}
-4. Add the Gherkin / test body referencing the acceptance criteria
-{% endif %}
-5. Flip spec row and `COVERAGE.md` row to ✅ after the test passes CI
-6. Validate with dry-run before committing
+2. Write the test with its two tags{% if has_test_repo %} and the {{ test_repo_label }} case ID (e.g. `@C12345`){% endif %}
 
----
+3. Flip the spec row to ✅ after the test passes CI, then `python scripts/coverage_report.py`
+4. Commit `COVERAGE.md` with the spec{% if doc_platform != 'none' %}; sync {{ doc_label }} per `.claude/rules/coverage-sync.md`{% endif %}
 
-## 8. Coverage Sync (mandatory after every task that creates or automates a case)
-
-After every task: update `COVERAGE.md`, update `specs/<domain>.md`{% if doc_platform != 'none' %}, sync {{ doc_label }}{% endif %}.
-A task is not done until all sources agree.
-
-See `.claude/rules/coverage-sync.md` for the full procedure.
+A task is not done until specs, `COVERAGE.md`{% if doc_platform != 'none' %} and {{ doc_label }}{% endif %} agree.
