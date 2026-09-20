@@ -18,14 +18,14 @@ def scaffold(config, tmp_path) -> Path:
 @then(parsers.re(r'the skills include "(?P<a>[^"]+)" and "(?P<b>[^"]+)"$'))
 def skills_include_two(project, a, b):
     for name in (a, b):
-        assert (project / ".claude/skills" / f"{name}.md").exists(), name
+        assert (project / ".claude/skills" / name / "SKILL.md").exists(), name
 
 
 @then(parsers.re(r'the skills include "(?P<a>[^"]+)"$'))
 def skills_include_one(project, a):
-    assert (project / ".claude/skills" / f"{a}.md").exists(), a
+    assert (project / ".claude/skills" / a / "SKILL.md").exists(), a
 
 
 @then(parsers.re(r'the skills do not include "(?P<name>[^"]+)"$'))
 def skills_exclude(project, name):
-    assert not (project / ".claude/skills" / f"{name}.md").exists()
+    assert not (project / ".claude/skills" / name / "SKILL.md").exists()

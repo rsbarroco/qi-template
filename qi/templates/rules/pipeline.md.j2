@@ -1,0 +1,65 @@
+# Rule: Driving a Ticket Through the Pipeline
+
+The AI agent drives tickets through the QA pipeline by reconstructing current state from
+live artifacts, then spawning the correct sub-agent for the missing phase. There is no
+stored state machine: **the live artifacts are the state.**
+
+## Invocation
+
+The user hands over a ticket key (`{{ tracker_project_key }}-NNNN`{% if tracker == 'github_issues' %} or issue number{% endif %}).
+That key is the universal join key embedded in every artifact (TD doc title, test case
+Refs field, run name) and is how you find prior work.
+
+## Cold-start reconstruction — do this first, every time
+
+1. **Read or build the ticket dossier** — `qa/dossiers/<KEY>.md`, produced by Step 2 of
+   the `ticket-intake` skill (comments, attachments, PRs, linked tickets, each with its
+   source). **Never spawn a sub-agent without it.** A ticket description alone is not
+   enough to design tests from.
+2. **Read `.claude/references/` next** — the living cache records what has already been
+   created (test sections, automation coverage, project constants).
+3. **On a cache miss, query the live systems** ({{ doc_label }}, {{ test_repo_label }},
+   {{ tracker_label }}) using the ticket key as the search anchor.
+4. **If nothing exists for the ticket, spawn sub-agents** to create it (test-design → bdd),
+   passing `dossier_path` in the handoff contract.
+
+{{ comm_platform_label if has_comm_platform else "Chat" }} is **notify-only** — never
+use it as a reconstruction source.
+
+## Phase-derivation table
+
+The table lives in `CLAUDE.md` (section 00): probe, finding, next action. Walk it top
+to bottom; the first probe is always the dossier.
+
+## Dispatch + handoff rules
+
+- Spawn sub-agents **serially, one at a time** — never two concurrently for the same ticket.
+- Every dispatch passes the **handoff contract** (`handoff-protocol` skill):
+  required keys + `actions_taken` + `routing` + `writeback_targets`.
+- After a sub-agent creates a remote artifact, perform the **`.md` write-back**: update
+  `.claude/references/test-sections.md` (new section) or `automation-coverage.md`
+  (new automation rows) so the next cold-start session does not need a live query.
+- **Stay in your lane**: each sub-agent owns exactly one phase. A test-design-agent never
+  creates test cases; a bdd-agent never runs the browser.
+
+## Inline compliance gate
+
+After **each** sub-agent returns, run the `convention-check` skill on its output:
+
+- `critical > 0` → re-dispatch that same phase with the findings attached.
+- **After 3 rewrites of the same phase** → escalate to human{% if has_comm_platform %} via
+  {{ comm_platform_label }}{% endif %} and halt.
+- On manual verdicts: `failed_requirement` → route rework to test-design-agent;
+  `failed_scenario` → app bug (`report-bug` skill). Each counts against the rewrite ceiling.
+
+## Reference directives
+
+| Situation | Read first |
+|---|---|
+| Reconstructing or handing off a ticket | `.claude/skills/handoff-protocol/SKILL.md` |
+{% if has_test_repo %}
+| Resolving any test section path | `.claude/references/test-sections.md` |
+| Which mapped cases are automated | `.claude/references/automation-coverage.md` |
+{% endif %}
+| Project IDs, base URLs, credential env vars | `.claude/references/project-constants.md` |
+| Authoring or checking a test case or a Test Design doc | `.claude/skills/convention-check/SKILL.md` |

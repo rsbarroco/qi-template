@@ -1,8 +1,10 @@
+from datetime import date
 from pathlib import Path
 from jinja2 import Environment, PackageLoader, select_autoescape
 from rich.console import Console
 
 from qi.config import Config
+from qi.skills import SKILLS, skill
 
 console = Console()
 
@@ -32,14 +34,27 @@ def _always() -> list[tuple[str, str]]:
         ("rules/coverage-sync.md.j2",                 ".claude/rules/coverage-sync.md"),
         ("rules/feedback-loop.md.j2",                 ".claude/rules/feedback-loop.md"),
         ("rules/reusable-test-data.md.j2",            ".claude/rules/reusable-test-data.md"),
+        ("rules/dependencies.md.j2",                  ".claude/rules/dependencies.md"),
+        # Hooks — the gates as code (settings.json wires them; AUTONOMY.md explains the levels)
+        ("hooks/settings.json.j2",                    ".claude/settings.json"),
+        ("hooks/_lib.py.j2",                          ".claude/hooks/_lib.py"),
+        ("hooks/protect_paths.py.j2",                 ".claude/hooks/protect_paths.py"),
+        ("hooks/guard_bash.py.j2",                    ".claude/hooks/guard_bash.py"),
+        ("hooks/stop_gate.py.j2",                     ".claude/hooks/stop_gate.py"),
+        ("hooks/autonomy.json.j2",                    ".claude/autonomy.json"),
+        ("AUTONOMY.md.j2",                            "AUTONOMY.md"),
+        # Architecture decision records
+        ("decisions/README.md.j2",                    "docs/decisions/README.md"),
+        ("decisions/TEMPLATE.md.j2",                  "docs/decisions/TEMPLATE.md"),
+        ("decisions/0001-hooks-enforce-the-constitution.md.j2", "docs/decisions/0001-hooks-enforce-the-constitution.md"),
         # Core skills — always useful
-        ("skills/fix-tests.md.j2",                   ".claude/skills/fix-tests.md"),
-        ("skills/diagnose.md.j2",                    ".claude/skills/diagnose.md"),
-        ("skills/report-bug.md.j2",                  ".claude/skills/report-bug.md"),
-        ("skills/verify-ticket.md.j2",               ".claude/skills/verify-ticket.md"),
-        ("skills/gap-analysis.md.j2",                ".claude/skills/gap-analysis.md"),
-        ("skills/sprint-report.md.j2",               ".claude/skills/sprint-report.md"),
-        ("skills/json-schema.md.j2",                 ".claude/skills/json-schema.md"),
+        skill("fix-tests"),
+        skill("diagnose"),
+        skill("report-bug"),
+        skill("verify-ticket"),
+        skill("gap-analysis"),
+        skill("sprint-report"),
+        skill("json-schema"),
         # References — living cache files (always scaffolded)
         ("references/project-constants.md.j2",       ".claude/references/project-constants.md"),
         # Scripts
@@ -61,11 +76,12 @@ def _conditional(cfg: Config) -> list[tuple[str, str]]:
     # ---- Full 4-phase agent pipeline (requires tracker + doc or test repo) ----
     if cfg.has_pipeline:
         pairs += [
+            ("rules/pipeline.md.j2",                   ".claude/rules/pipeline.md"),
             ("agents/test-design-agent.md.j2",         ".claude/agents/test-design-agent.md"),
-            ("skills/handoff-protocol.md.j2",          ".claude/skills/handoff-protocol.md"),
-            ("skills/convention-check.md.j2",          ".claude/skills/convention-check.md"),
-            ("skills/discovery.md.j2",                 ".claude/skills/discovery.md"),
-            ("skills/ticket-intake.md.j2",             ".claude/skills/ticket-intake.md"),
+            skill("handoff-protocol"),
+            skill("convention-check"),
+            skill("discovery"),
+            skill("ticket-intake"),
         ]
 
     if cfg.has_pipeline and cfg.has_test_repo:
@@ -73,43 +89,43 @@ def _conditional(cfg: Config) -> list[tuple[str, str]]:
             ("agents/bdd-agent.md.j2",                 ".claude/agents/bdd-agent.md"),
             ("agents/manual-agent.md.j2",              ".claude/agents/manual-agent.md"),
             ("agents/automation-agent.md.j2",          ".claude/agents/automation-agent.md"),
-            ("skills/bdd-writer.md.j2",                ".claude/skills/bdd-writer.md"),
+            skill("bdd-writer"),
             ("references/automation-coverage.md.j2",   ".claude/references/automation-coverage.md"),
             ("references/test-sections.md.j2",         ".claude/references/test-sections.md"),
         ]
     elif not cfg.has_pipeline:
         # Simple workflow: no agent pipeline, just the ticket-intake skill
-        pairs.append(("skills/ticket-intake.md.j2", ".claude/skills/ticket-intake.md"))
+        pairs.append(skill("ticket-intake"))
 
     # ---- Communication platform ----
     if cfg.has_comm_platform:
-        pairs.append(("skills/comm-broadcast.md.j2", ".claude/skills/comm-broadcast.md"))
+        pairs.append(skill("comm-broadcast"))
 
     # ---- Database skills ----
     if cfg.has_sql:
-        pairs.append(("skills/sql-query.md.j2", ".claude/skills/sql-query.md"))
+        pairs.append(skill("sql-query"))
     if cfg.has_nosql:
         pairs += [
-            ("skills/nosql-query.md.j2",  ".claude/skills/nosql-query.md"),
+            skill("nosql-query"),
             ("scripts/nosql_query.py.j2", "scripts/nosql_query.py"),
         ]
 
     # ---- UI skills ----
     if cfg.ui_web:
         pairs += [
-            ("skills/web-ui.md.j2",                    ".claude/skills/web-ui.md"),
+            skill("web-ui"),
             ("rules/test-execution-path.md.j2",        ".claude/rules/test-execution-path.md"),
         ]
     if cfg.has_mobile:
-        pairs.append(("skills/mobile.md.j2", ".claude/skills/mobile.md"))
+        pairs.append(skill("mobile"))
 
     # ---- Infrastructure skills ----
     if cfg.has_cloud:
-        pairs.append(("skills/cloud-logs.md.j2", ".claude/skills/cloud-logs.md"))
+        pairs.append(skill("cloud-logs"))
     if cfg.has_queues:
-        pairs.append(("skills/queue-testing.md.j2", ".claude/skills/queue-testing.md"))
+        pairs.append(skill("queue-testing"))
     if cfg.has_performance:
-        pairs.append(("skills/performance.md.j2", ".claude/skills/performance.md"))
+        pairs.append(skill("performance"))
 
     # ---- Doc platform extras ----
     if cfg.doc_platform == "confluence":
@@ -117,7 +133,10 @@ def _conditional(cfg: Config) -> list[tuple[str, str]]:
 
     # ---- CI/CD ----
     if cfg.ci == "github_actions":
-        pairs.append(("ci/github-actions.yml.j2", ".github/workflows/tests.yml"))
+        pairs += [
+            ("ci/github-actions.yml.j2", ".github/workflows/tests.yml"),
+            ("ci/dependabot.yml.j2",     ".github/dependabot.yml"),
+        ]
     elif cfg.ci == "gitlab_ci":
         pairs.append(("ci/gitlab-ci.yml.j2", ".gitlab-ci.yml"))
     elif cfg.ci == "jenkins":
@@ -140,7 +159,11 @@ def generate(cfg: Config, target: Path) -> None:
         out = target / out_path
         out.parent.mkdir(parents=True, exist_ok=True)
         tpl = _env.get_template(tpl_path)
-        out.write_text(tpl.render(**ctx), encoding="utf-8")
+        text = tpl.render(**ctx)
+        if out_path.startswith(".claude/skills/"):
+            name = out_path.split("/")[2]
+            text = SKILLS[name].frontmatter() + text
+        out.write_text(text, encoding="utf-8")
         console.print(f"  [green]create[/green]  {out_path}")
 
 
@@ -232,4 +255,7 @@ def _build_context(cfg: Config) -> dict:
         "has_test_repo":          cfg.has_test_repo,
         "has_comm_platform":      cfg.has_comm_platform,
         "has_pipeline":           cfg.has_pipeline,
+        "uses_npm":               cfg.uses_npm,
+        "generated_on":           date.today().isoformat(),
+        "side_effect_skills":     sorted(m.name for m in SKILLS.values() if m.side_effect),
     }

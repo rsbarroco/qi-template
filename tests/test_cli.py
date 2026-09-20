@@ -23,7 +23,7 @@ def test_dry_run_lists_files_and_writes_nothing(tmp_path, monkeypatch):
     result = runner.invoke(cli.app, [str(target), "--dry-run"])
     assert result.exit_code == 0, result.output
     assert "Dry run" in result.output
-    assert "CLAUDE.md" in result.output and ".claude/skills/web-ui.md" in result.output
+    assert "CLAUDE.md" in result.output and ".claude/skills/web-ui/SKILL.md" in result.output
     assert not target.exists()
 
 

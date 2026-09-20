@@ -46,7 +46,7 @@ def has_table(project):
 @then("the first probe in CLAUDE.md is the ticket dossier")
 def first_probe_is_dossier(project):
     claude = (project / "CLAUDE.md").read_text()
-    table = claude[claude.index("Phase-derivation table"):claude.index("Dispatch + handoff rules")]
+    table = claude[claude.index("Phase-derivation table"):claude.index("## 0. Pre-flight")]
     rows = [r for r in table.splitlines() if r.startswith("|") and not r.startswith("|---") and "Probe" not in r]
     assert "qa/dossiers/<KEY>.md" in rows[0]
 

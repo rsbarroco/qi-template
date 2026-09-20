@@ -58,13 +58,13 @@ def test_every_skill_named_in_claude_md_exists(tmp_path):
     generate(_cfg(ui_web=True, sql_dbs=["postgresql"], cloud="gcp", queues=["kafka"], performance="locust"), tmp_path)
     claude = (tmp_path / "CLAUDE.md").read_text()
     for name in re.findall(r"`([a-z-]+)` skill", claude):
-        assert (tmp_path / ".claude/skills" / f"{name}.md").exists(), name
+        assert (tmp_path / ".claude/skills" / name / "SKILL.md").exists(), name
 
 
 def test_conditional_skills_follow_the_config(tmp_path):
     generate(_cfg(), tmp_path)   # nothing optional
     skills = {p.name for p in (tmp_path / ".claude/skills").iterdir()}
-    assert skills == {"ticket-intake.md", "verify-ticket.md", "gap-analysis.md", "sprint-report.md", "json-schema.md", "fix-tests.md", "diagnose.md", "report-bug.md"}
+    assert skills == {"ticket-intake", "verify-ticket", "gap-analysis", "sprint-report", "json-schema", "fix-tests", "diagnose", "report-bug"}
 
 
 @pytest.mark.parametrize("field, value, expect", [

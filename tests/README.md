@@ -7,6 +7,8 @@ one costs tokens and runs on the maintainer's machine.
 |---|---|---|---|
 | **Unit** | `tests/test_*.py` | `Config`, prompts (scripted `questionary`), generator context, every template renders for every tracker × CI combination with no Jinja leftovers, CI files are valid YAML, eval graders can fail, labels and report arithmetic | < 1 s |
 | **Generated scripts** | `tests/test_qa_track_script.py`, `tests/test_coverage_report_script.py` | The `qa_track.py` and `coverage_report.py` that ship inside generated projects, executed as subprocesses against a freshly rendered project | ~2 s |
+| **Generated hooks** | `tests/test_hooks.py` | The three Claude Code hooks run as processes with JSON on stdin: every rule has a blocking and an allowing case, the TDD phase guard, the autonomy gates, the stop gate on a real git repo | ~3 s |
+| **Constitution format** | `tests/test_constitution_format.py` | CLAUDE.md under 200 lines, rules scoped by `paths:`, every skill a `SKILL.md` folder with a third-person description, side-effect skills not model-invocable, autonomy.json agrees with AUTONOMY.md | < 1 s |
 | **Acceptance (ATDD)** | `tests/acceptance/features/*.feature` + step files | Gherkin scenarios from the user's side: scaffolding a stack, tracking a ticket to close, coverage that cannot drift, and an intake whose graders accept a compliant agent and catch a sloppy one | ~3 s |
 | **Evals** | `evals/` | Whether a real agent actually follows the generated skills. Needs `claude -p` and a login; see `evals/README.md` | maintainer, on demand |
 

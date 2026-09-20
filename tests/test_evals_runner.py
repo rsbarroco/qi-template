@@ -52,7 +52,7 @@ def fake_claude(tmp_path, monkeypatch):
 def test_prepare_project_renders_fixture_and_seeds(isolated_runs, tmp_path):
     project, activity = runner.prepare_project("ticket-intake", tmp_path / "r1")
     assert (project / "CLAUDE.md").exists()
-    assert (project / ".claude" / "skills" / "ticket-intake.md").exists()
+    assert (project / ".claude" / "skills" / "ticket-intake" / "SKILL.md").exists()
     assert (project / "tickets" / "SHOP-101.md").exists()
     assert (project / "specs" / "cart.md").exists()
     assert (project / ".git").is_dir()

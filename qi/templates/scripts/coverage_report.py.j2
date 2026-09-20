@@ -14,6 +14,7 @@ Usage
 -----
   python scripts/coverage_report.py          # prints summary + updates COVERAGE.md
   python scripts/coverage_report.py --check  # exits 1 if any ❌ rows exist
+  python scripts/coverage_report.py --verify # exits 1 if COVERAGE.md is stale; writes nothing
 """
 
 from __future__ import annotations
@@ -57,6 +58,7 @@ def _parse_spec(path: Path) -> tuple[int, int, int]:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true", help="Exit 1 if coverage gaps exist")
+    parser.add_argument("--verify", action="store_true", help="Exit 1 if COVERAGE.md is stale (never writes)")
     args = parser.parse_args()
 
     specs = (
@@ -92,20 +94,26 @@ def main() -> None:
         print("  " + "{:<30}  {:>5}  {:>8}  {:>7}".format(domain, auto, partial, manual))
     print()
 
-    # Update COVERAGE.md summary block
+    # Update COVERAGE.md summary block (or, with --verify, only compare)
     if COVERAGE_FILE.exists():
         content = COVERAGE_FILE.read_text(encoding="utf-8")
         new_table = (
             f"| {total_cases} | {totals['auto']} | {pct}% |"
         )
-        content = re.sub(
+        updated = re.sub(
             r"\| \d+ \| \d+ \| \d+% \|",
             new_table,
             content,
             count=1,
         )
-        COVERAGE_FILE.write_text(content, encoding="utf-8")
-        print(f"  COVERAGE.md updated: {total_cases} total / {totals['auto']} automated / {pct}%")
+        if args.verify:
+            if updated != content:
+                print(f"\n[coverage_report] COVERAGE.md is stale: expected summary row {new_table}. Run python scripts/coverage_report.py")
+                sys.exit(1)
+            print("  COVERAGE.md is in sync")
+        else:
+            COVERAGE_FILE.write_text(updated, encoding="utf-8")
+            print(f"  COVERAGE.md updated: {total_cases} total / {totals['auto']} automated / {pct}%")
 
     if args.check and totals["manual"] > 0:
         print(f"\n[coverage_report] {totals['manual']} manual-only cases remain (❌). CI gate active.")

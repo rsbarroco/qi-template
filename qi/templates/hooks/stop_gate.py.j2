@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+"""Stop. The agent may not end its turn with a spec changed and COVERAGE.md stale
+(coverage-sync rule). Runs the same check CI runs. Never re-blocks once it already
+blocked (stop_hook_active), so a broken checker cannot trap the session."""
+from __future__ import annotations
+
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _lib import project_dir, run  # noqa: E402
+
+SPEC_OR_COVERAGE = re.compile(r"^(specs/.*\.md|COVERAGE\.md)$")
+
+
+def changed_files(root: Path) -> list[str]:
+    try:
+        status = subprocess.run(["git", "status", "--porcelain"], cwd=root, capture_output=True, text=True)
+    except OSError:
+        return []
+    if status.returncode != 0:
+        return []
+    return [line[3:].strip() for line in status.stdout.splitlines() if line.strip()]
+
+
+def decide(payload: dict, env: dict) -> str | None:
+    if payload.get("stop_hook_active"):
+        return None
+    root = project_dir(payload, env)
+    if not any(SPEC_OR_COVERAGE.match(f) for f in changed_files(root)):
+        return None
+    checker = root / "scripts" / "coverage_report.py"
+    if not checker.exists():
+        return None
+    result = subprocess.run([sys.executable, str(checker), "--verify"], cwd=root, capture_output=True, text=True)
+    if result.returncode != 0:
+        tail = (result.stdout + result.stderr).strip()[-400:]
+        return ("a spec changed but COVERAGE.md is stale. Run: python scripts/coverage_report.py, "
+                f"then commit COVERAGE.md with the specs.\n{tail}")
+    return None
+
+
+SELF_TEST = [
+    ({"stop_hook_active": True}, {}, False),
+    ({"cwd": "/nonexistent"}, {"CLAUDE_PROJECT_DIR": "/nonexistent"}, False),
+]
+
+if __name__ == "__main__":
+    run(decide, SELF_TEST)

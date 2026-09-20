@@ -17,15 +17,15 @@ from qi.generator import _build_context, generate
 
 PIPELINE_ONLY = {
     ".claude/agents/test-design-agent.md",
-    ".claude/skills/handoff-protocol.md",
-    ".claude/skills/convention-check.md",
-    ".claude/skills/discovery.md",
+    ".claude/skills/handoff-protocol/SKILL.md",
+    ".claude/skills/convention-check/SKILL.md",
+    ".claude/skills/discovery/SKILL.md",
 }
 TEST_REPO_ONLY = {
     ".claude/agents/bdd-agent.md",
     ".claude/agents/manual-agent.md",
     ".claude/agents/automation-agent.md",
-    ".claude/skills/bdd-writer.md",
+    ".claude/skills/bdd-writer/SKILL.md",
     ".claude/references/automation-coverage.md",
     ".claude/references/test-sections.md",
 }
@@ -61,7 +61,7 @@ def test_pipeline_without_test_repo_generates_only_the_design_phase(tmp_path):
     files = _files(tmp_path)
     assert PIPELINE_ONLY <= files
     assert not (TEST_REPO_ONLY & files)
-    assert ".claude/skills/ticket-intake.md" in files          # intake still exists in pipeline mode
+    assert ".claude/skills/ticket-intake/SKILL.md" in files          # intake still exists in pipeline mode
 
 
 def test_pipeline_with_test_repo_generates_all_four_phases(tmp_path):
@@ -75,20 +75,20 @@ def test_simple_mode_has_no_agents(tmp_path):
     files = _files(tmp_path)
     assert not (PIPELINE_ONLY & files) and not (TEST_REPO_ONLY & files)
     assert not (tmp_path / ".claude/agents").exists()
-    assert ".claude/skills/ticket-intake.md" in files
+    assert ".claude/skills/ticket-intake/SKILL.md" in files
 
 
 # --- optional extras ------------------------------------------------------------------
 
 def test_comm_platform_adds_broadcast_skill_with_channel(tmp_path):
     generate(_cfg(comm_platform="slack", comm_platform_channel="#qa-alerts"), tmp_path)
-    text = (tmp_path / ".claude/skills/comm-broadcast.md").read_text()
+    text = (tmp_path / ".claude/skills/comm-broadcast/SKILL.md").read_text()
     assert "Slack" in text and "#qa-alerts" in text and "notify-only" in text.lower()
 
 
 def test_no_comm_platform_no_broadcast_skill(tmp_path):
     generate(_cfg(), tmp_path)
-    assert not (tmp_path / ".claude/skills/comm-broadcast.md").exists()
+    assert not (tmp_path / ".claude/skills/comm-broadcast/SKILL.md").exists()
 
 
 @pytest.mark.parametrize("doc, present", [("confluence", True), ("notion", False), ("none", False)])
@@ -203,7 +203,7 @@ def test_pipeline_claude_md_probes_the_dossier_before_any_sub_agent(tmp_path):
     claude = (tmp_path / "CLAUDE.md").read_text()
     assert "Phase-derivation table" in claude
     assert "## 00. Ticket intake" not in claude            # simple-mode section is not rendered
-    table = claude[claude.index("Phase-derivation table"):claude.index("Dispatch + handoff rules")]
+    table = claude[claude.index("Phase-derivation table"):claude.index("## 0. Pre-flight")]
     rows = [r for r in table.splitlines() if r.startswith("|") and not r.startswith("|---") and "Probe" not in r]
     assert "qa/dossiers/<KEY>.md" in rows[0], "the dossier must be the first probe"
     assert "ticket-intake" in rows[0]
@@ -226,5 +226,5 @@ def test_test_design_agent_reads_the_dossier_not_the_raw_ticket(tmp_path):
 
 def test_handoff_contract_carries_the_dossier_path(tmp_path):
     generate(_cfg(), tmp_path)
-    text = (tmp_path / ".claude/skills/handoff-protocol.md").read_text()
+    text = (tmp_path / ".claude/skills/handoff-protocol/SKILL.md").read_text()
     assert '"dossier_path"' in text and "REQUIRED" in text.split('"dossier_path"')[1].split("\n")[0]

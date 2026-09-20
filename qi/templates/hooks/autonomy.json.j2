@@ -1,0 +1,33 @@
+{
+  "$comment": "Current autonomy level per task type. Levels: 0 propose only, 1 execute after explicit approval, 2 execute and report, 3 autonomous with review afterwards. Promotion and demotion rules: AUTONOMY.md. The hooks in .claude/hooks read this file; QI_AUTONOMY_OVERRIDE=task=level raises a level for one session only. gates: Bash commands guard_bash.py refuses below the level.",
+  "updated": "{{ generated_on }}",
+  "tasks": {
+    "dossier": 2,
+    "case-authoring": 2,
+    "case-approve": 0,
+    "execute-on-dev": 2,
+    "execute-on-staging": 1,
+    "code-change": 2,
+    "test-authoring": 3,
+{% if tracker != 'none' %}
+    "tracker-transition": 1,
+    "bug-report": 1,
+{% endif %}
+{% if has_comm_platform %}
+    "comm-post": 0,
+{% endif %}
+{% if doc_platform != 'none' %}
+    "doc-publish": 1,
+{% endif %}
+    "report-generate": 2,
+    "open-pr": 3,
+    "merge-pr": 0,
+    "merge-dependency-pr": 2,
+    "coverage-sync": 3
+  },
+  "gates": [
+    { "pattern": "\\bgh\\s+pr\\s+merge\\b|merge_pull_request", "task": "merge-pr", "needs": 3 }{% if has_performance %},
+    { "pattern": "\\b(k6\\s+run|locust|jmeter|gatling|artillery\\s+run)\\b", "task": "execute-on-staging", "needs": 2 }{% endif %}
+
+  ]
+}

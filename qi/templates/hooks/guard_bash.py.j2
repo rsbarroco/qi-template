@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+"""PreToolUse (Bash). Blocks the commands the constitution forbids and the ones the
+current autonomy level does not allow (gates in .claude/autonomy.json)."""
+from __future__ import annotations
+
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _lib import LEVELS, autonomy_level, load_autonomy, project_dir, run  # noqa: E402
+
+HEREDOC = re.compile(r"<<-?\s*['\"]?(\w+)['\"]?[\s\S]*?\n\1(?=\n|$)")
+QUOTED = re.compile(r'"(?:[^"\\]|\\.)*"|\'[^\']*\'')
+
+FORBIDDEN = [
+    (re.compile(r"\bgit\s+push\b[^|;&]*\s(--force(-with-lease)?|-f)\b"), "never force-push (CLAUDE.md 0a)"),
+    (re.compile(r"\bgit\s+push\b[^|;&]*\s(origin\s+)?(main|master)(\s|$)"), "never push straight to main; open a PR from a branch"),
+    (re.compile(r"\bgit\s+commit\b[^|;&]*--no-verify"), "--no-verify skips the commit hooks; fix the hook failure instead"),
+    (re.compile(r"\bgit\b[^|;&]*-c\s*core\.hooksPath\b|HUSKY=0|\bhusky\s+uninstall\b"), "bypassing the git hooks is the same as --no-verify; fix the hook failure instead"),
+    (re.compile(r"(cat|less|more|head|tail|bat|grep|sed|awk|printenv|echo\s+\$)\b[^|;&]*\.env(\.local|\.(?!example\b)[a-z]+)?\b(?!\.example)|\.env\.local"), "never read or print secrets (.env, tokens, keys)"),
+]
+
+DEFAULT_GATES = [
+    {"pattern": r"\bgh\s+pr\s+merge\b|merge_pull_request", "task": "merge-pr", "needs": 3},
+]
+
+
+def surface(raw: str) -> str:
+    """The command surface, not its data: heredoc bodies and quoted strings (commit
+    messages, PR bodies) may mention a forbidden command without running it."""
+    return QUOTED.sub('""', HEREDOC.sub("<<HEREDOC", raw))
+
+
+def decide(payload: dict, env: dict) -> str | None:
+    raw = str((payload.get("tool_input") or {}).get("command") or "")
+    if not raw.strip():
+        return None
+    cmd = surface(raw)
+    for pattern, why in FORBIDDEN:
+        if pattern.search(cmd):
+            return why
+    root = project_dir(payload, env)
+    gates = load_autonomy(root).get("gates") or DEFAULT_GATES
+    for gate in gates:
+        try:
+            if not re.search(gate["pattern"], cmd):
+                continue
+        except (re.error, KeyError, TypeError):
+            continue
+        task, needed = gate.get("task", ""), int(gate.get("needs", 3))
+        level = autonomy_level(root, task, env)
+        if level < needed:
+            return (f'autonomy level for "{task}" is {level} ({LEVELS[min(level, 3)]}); this command needs {needed}. '
+                    "Ask the QA engineer to run it, or to raise the level in .claude/autonomy.json after the evals justify it (AUTONOMY.md).")
+    return None
+
+
+SELF_TEST = [
+    ({"tool_input": {"command": "git push --force origin feat/x"}}, {}, True),
+    ({"tool_input": {"command": "git push -f"}}, {}, True),
+    ({"tool_input": {"command": "git push origin main"}}, {}, True),
+    ({"tool_input": {"command": "git push -u origin feat/x"}}, {}, False),
+    ({"tool_input": {"command": "git commit --no-verify -m x"}}, {}, True),
+    ({"tool_input": {"command": "git commit -m 'never git push --force again'"}}, {}, False),
+    ({"tool_input": {"command": "cat .env"}}, {}, True),
+    ({"tool_input": {"command": "cat .env.example"}}, {}, False),
+    ({"tool_input": {"command": "gh pr merge 12"}}, {"CLAUDE_PROJECT_DIR": "/nonexistent"}, True),
+    ({"tool_input": {"command": "gh pr merge 12"}}, {"CLAUDE_PROJECT_DIR": "/nonexistent", "QI_AUTONOMY_OVERRIDE": "merge-pr=3"}, False),
+    ({"tool_input": {"command": ""}}, {}, False),
+]
+
+if __name__ == "__main__":
+    run(decide, SELF_TEST)

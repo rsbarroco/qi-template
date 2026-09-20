@@ -51,9 +51,14 @@ COVERAGE.md     # aggregated coverage tracker
 scripts/
   qa_track.py           # AI-usage activity tracker
   coverage_report.py    # generates coverage report from COVERAGE.md
+AUTONOMY.md     # what the agent may do alone, per task, and how a task earns more
+docs/decisions/ # architecture decision records (MADR)
 .claude/
-  rules/        # AI agent constraints and patterns
-  skills/       # reusable AI workflows (ticket-intake, verify-ticket, etc.)
+  settings.json # wires the hooks below
+  hooks/        # protect_paths, guard_bash, stop_gate — the gates as code
+  autonomy.json # current autonomy level per task, read by the hooks
+  rules/        # AI agent constraints, scoped by `paths:` frontmatter
+  skills/       # one folder per skill, SKILL.md inside (Agent Skills format)
 ```
 
 ## AI assistant setup (Claude Code)
@@ -62,10 +67,13 @@ This project is configured for [Claude Code](https://claude.ai/code).
 
 Open the project root in Claude Code — `CLAUDE.md` is loaded automatically and gives the
 AI agent the full context it needs to work on tickets, write tests, and maintain coverage.
+The hooks in `.claude/hooks/` need `python3` on the PATH; check them with
+`python3 .claude/hooks/guard_bash.py --self-test`. The skills use the
+[Agent Skills](https://agentskills.io) layout, so Codex, Cursor and Copilot can read them too.
 
 ## Adding a new test
 
-See `CLAUDE.md` section 7 and `specs/README.md`.
+See `CLAUDE.md` section 6 and `specs/README.md`.
 
 ## Coverage
 

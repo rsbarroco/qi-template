@@ -1,0 +1,50 @@
+# Dependency updates. Dependabot needs no token and no extra app: it runs on GitHub's
+# side and opens PRs that go through the same CI as any other change. Nothing merges on
+# its own; the rule in .claude/rules/dependencies.md says what "validated" means.
+#
+# One batch per ecosystem per week, so the queue is a few PRs on Monday instead of one
+# per package every day. Majors come alone, because they can change behaviour.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [dependencies]
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+{% if uses_npm %}
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels: [dependencies]
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+{% if test_framework == 'playwright' %}
+    ignore:
+      # The browser the suite was proven on; bumped deliberately, with the UI suite as
+      # the check (.claude/rules/dependencies.md).
+      - dependency-name: playwright
+        update-types: ['version-update:semver-major']
+      - dependency-name: '@playwright/test'
+        update-types: ['version-update:semver-major']
+{% endif %}
+{% endif %}
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependencies]
+    groups:
+      actions:
+        patterns: ['*']
