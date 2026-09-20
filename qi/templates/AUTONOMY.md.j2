@@ -78,3 +78,14 @@ python3 .claude/hooks/protect_paths.py --self-test
 python3 .claude/hooks/guard_bash.py --self-test
 python3 .claude/hooks/stop_gate.py --self-test
 ```
+
+## What the hooks are not
+
+The hooks are tripwires, not a sandbox: they catch the forms of a forbidden action the
+constitution names and make an accidental violation visible. Any file can be read by a
+program the regex does not list and any command can be spelled another way. The
+guarantees live where the agent cannot rewrite them: branch protection on `main` (no
+direct or force pushes, required CI, review before merge) and secrets kept off the
+agent's disk (`.env` only on the engineer's machine, CI secrets in the CI settings,
+read-only credentials where a service offers them).
+

@@ -100,6 +100,10 @@ def test_tdd_phase_guard(project, phase, path, blocked):
     ("git push --force origin feat/x", True), ("git push -f origin feat/x", True),
     ("git push --force-with-lease", True), ("git push origin main", True), ("git push main", True),
     ("git push -u origin feat/x", False), ("git push origin feat/main-menu", False),
+    ("git -c x=y push -f origin feat/x", True), ("git -c user.name=a push origin main", True),   # options between git and push
+    ("git push origin +feat/x", True), ("git push origin +HEAD:feat/x", True),                    # force via refspec
+    ("git push origin HEAD:main", True), ("git push origin feat/x:master", True),                 # main as refspec destination
+    ("git push origin HEAD:refs/heads/feat/x", False), ("git push origin feat/x:feat/x", False),
     ("git commit --no-verify -m 'x'", True), ("git -c core.hooksPath=/dev/null commit -m x", True),
     ("HUSKY=0 git commit -m x", True), ("git commit -m 'fix'", False),
     ("cat .env", True), ("grep TOKEN .env.local", True), ("cat .env.example", False), ("cat requirements.txt", False),

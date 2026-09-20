@@ -148,6 +148,18 @@ QI_AUTONOMY_OVERRIDE="execute-on-staging=2" claude     # raise one level, one se
 A hook refusal is a rule, not a bug to work around. Levels in `.claude/autonomy.json`
 change only through the promotion rule in `AUTONOMY.md`, in a PR the QA engineer opens.
 
+**The hooks are tripwires, not a sandbox.** They catch the forms of a forbidden action the
+constitution names and turn an accidental violation into a visible refusal. Any file can be
+read by a program the regex does not list (`base64 .env`, a Python one-liner) and any
+command can be spelled another way. The guarantees have to live where the agent cannot
+rewrite them:
+
+- **Branch protection on `main`**: no direct or force pushes, required CI, review before
+  merge. A hook that misses one spelling of `git push` then costs nothing.
+- **Secrets off the agent's disk**: `.env` only on the engineer's machine, CI secrets in
+  the CI settings, tokens injected per run. Prefer read-only credentials where a service
+  offers them.
+
 ---
 
 ## Adding new options
