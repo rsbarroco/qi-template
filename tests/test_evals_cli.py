@@ -102,3 +102,44 @@ def test_grader_marks_never_exceed_what_the_console_can_print(encoding, expected
         return
     for mark in marks:
         mark.encode(encoding)   # would raise if the mark could not be printed
+
+
+class _Stream:
+    """A stdout stand-in that reports an encoding, the way a real console does."""
+
+    def __init__(self, encoding):
+        self.encoding = encoding
+
+
+@pytest.mark.parametrize("encoding", ["cp1252", "cp437", "ascii", None, "not-a-codec"])
+def test_printable_degrades_anything_the_console_cannot_encode(monkeypatch, encoding):
+    """Grader detail carries whatever the case file spells, and cases spell marks.
+
+    `verify-ticket/never-start-on-staging` greps for U+2705, so its detail is a pattern
+    containing one. rich hands that straight to the Win32 console, which encodes on the
+    console code page, and cp1252 has no U+2705: the run died after the grading had
+    already happened. The record on disk keeps the original text; only the screen degrades.
+    """
+    monkeypatch.setattr(evals_cli.sys, "stdout", _Stream(encoding))
+    out = evals_cli.printable("row is ✅ and ❌")
+    out.encode(encoding if encoding not in (None, "not-a-codec") else "ascii")
+    assert "row is" in out and "and" in out
+
+
+def test_printable_leaves_text_alone_when_the_console_can_encode_it(monkeypatch):
+    monkeypatch.setattr(evals_cli.sys, "stdout", _Stream("utf-8"))
+    assert evals_cli.printable("row is ✅") == "row is ✅"
+
+
+def test_every_grader_a_suite_can_show_survives_a_cp1252_console(monkeypatch):
+    """The whole point of the Windows job: no case may be unprintable where it is run."""
+    from tests.test_evals_suites import suites
+
+    monkeypatch.setattr(evals_cli.sys, "stdout", _Stream("cp1252"))
+    for skill in suites():
+        for case in runner.load_cases(skill):
+            for g in case["graders"]:
+                for field in ("name", "pattern", "path"):
+                    value = g.get(field)
+                    if isinstance(value, str):
+                        evals_cli.printable(value).encode("cp1252")
