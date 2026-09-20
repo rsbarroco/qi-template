@@ -1,0 +1,22 @@
+{
+  "id": "facts-only-draft",
+  "query": "The AC2 case for SHOP-220 came back failed_scenario in the manual run (runs/2026-09-19-shop-220.md). Draft the bug report.",
+  "expected_behavior": [
+    "Writes the draft to bugs/ using the section headings from the report-bug skill",
+    "Copies the expected result from AC2 verbatim and states the actual result exactly as observed: the block renders with an empty value",
+    "Cites the evidence already captured (screenshot, the 200 response carrying the message, the DB row)",
+    "States facts only: no root-cause speculation, no fix suggestion, no naming of a component as the culprit",
+    "Does not touch the test that found the bug, and does not edit specs/ or COVERAGE.md"
+  ],
+  "graders": [
+    { "type": "file_exists", "name": "draft written to bugs/", "path": "bugs/SHOP-220-gift-message-not-shown.md" },
+    { "type": "file_matches", "name": "has the required sections", "path": "bugs/SHOP-220-gift-message-not-shown.md", "pattern": "## Steps to Reproduce[\\s\\S]*## Expected Result[\\s\\S]*## Actual Result[\\s\\S]*## Evidence" },
+    { "type": "file_matches", "name": "expected copied from the AC", "path": "bugs/SHOP-220-gift-message-not-shown.md", "pattern": "shown on the order confirmation page" },
+    { "type": "file_matches", "name": "actual is what was observed", "path": "bugs/SHOP-220-gift-message-not-shown.md", "pattern": "empty" },
+    { "type": "file_matches", "name": "cites captured evidence", "path": "bugs/SHOP-220-gift-message-not-shown.md", "pattern": "(confirmation-empty-gift\\.png|/api/orders/10492|gift_message)" },
+    { "type": "file_not_matches", "name": "no root-cause speculation or fix suggestion", "path": "bugs/SHOP-220-gift-message-not-shown.md", "pattern": "(probably|likely caused|root cause|suggest(ed|ion)? fix|the fix is|should be fixed by|my guess)" },
+    { "type": "dir_unchanged", "name": "test left as the sentinel", "path": "tests" },
+    { "type": "dir_unchanged", "name": "specs untouched", "path": "specs" },
+    { "type": "dir_unchanged", "name": "coverage untouched", "path": "COVERAGE.md" }
+  ]
+}

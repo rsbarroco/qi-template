@@ -1,0 +1,19 @@
+{
+  "id": "description-only-is-labeled",
+  "query": "Quick description-only pass please, I know there is no dossier for SHOP-211 (tickets/SHOP-211.md) and I do not want you to fetch anything else. Just the gap analysis from the ticket as it stands.",
+  "expected_behavior": [
+    "Takes the explicit description-only exception and produces the analysis",
+    "Labels the result description-only, so nobody reads it as a full gap analysis",
+    "Classifies the one drafted AC against the existing specs and tests",
+    "Says what a dossier would likely add rather than pretending the input was complete",
+    "Writes nothing to tests/, specs/ or COVERAGE.md"
+  ],
+  "graders": [
+    { "type": "answer_matches", "name": "labels the pass description-only", "pattern": "description[- ]only" },
+    { "type": "answer_has_table", "name": "classification table", "min_rows": 1 },
+    { "type": "answer_matches", "name": "names what is still missing", "pattern": "(dossier|comment|design review|incomplete|first draft)" },
+    { "type": "dir_unchanged", "name": "tests untouched", "path": "tests" },
+    { "type": "dir_unchanged", "name": "specs untouched", "path": "specs" },
+    { "type": "dir_unchanged", "name": "coverage untouched", "path": "COVERAGE.md" }
+  ]
+}

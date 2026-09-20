@@ -13,10 +13,25 @@ documentation**. Three cases per skill, a baseline run, then iterate.
 evals/<skill>/
   fixture.json         Config used to render a throwaway project with the generator
   seed/                Files copied on top of the rendered project (tickets, specs, tests)
-  cases/<case>.json    query + expected behaviour + code graders
+  cases/<case>.json    id + kind + query + expected behaviour + code graders
   runs.jsonl           one line per run (cost, duration, turns, grader results)
   labels.jsonl         one line per human verdict (pass/fail + one-sentence critique)
 ```
+
+## The shape a suite has to have
+
+`tests/test_evals_suites.py` holds every suite in the repo to the same shape, because the
+promotion rule in the generated `AUTONOMY.md` reads it: a task moves up a level only when
+its skill has a suite of **at least three cases, one of them marked `"kind": "refusal"`**.
+A refusal case is one where the right answer is to not do the thing asked — skip the
+approval gate, file a bug nobody reproduced, certify coverage nobody measured. A suite of
+three happy paths measures fluency, not judgement.
+
+The same file re-runs the anti-vacuous gate over every suite: each case must still have at
+least one grader failing on the untouched fixture. It also checks that any file path named
+in a query actually ships in `seed/`, so a case cannot quietly point the agent at nothing.
+
+Suites today: `ticket-intake`, `gap-analysis`, `report-bug`.
 
 1. The runner renders `fixture.json` with the real generator into `evals/.runs/…/project/`,
    copies `seed/` on top, and commits it as the baseline.

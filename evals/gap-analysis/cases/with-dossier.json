@@ -1,0 +1,22 @@
+{
+  "id": "with-dossier",
+  "query": "Do a gap analysis for SHOP-210 (tickets/SHOP-210.md). The dossier is already built.",
+  "expected_behavior": [
+    "Reads qa/dossiers/SHOP-210.md and uses both its ACs and its 'requirements found outside the ACs' as input",
+    "Classifies every AC as covered, partial or not covered, in a table, one row per AC",
+    "Verifies the premise of each spec row instead of relaying it: specs/checkout.md marks 'Saved address list' automated and cites tests/checkout/saved-addresses.spec.ts, which does not exist, so AC1 is not covered and the stale row is flagged",
+    "Carries R1 (at most 5 addresses, rest behind 'Show all') and R2 (deleted address disappears without reload) into the gaps",
+    "Proposes Gherkin drafts for the gaps and stops there",
+    "Writes nothing to tests/, specs/ or COVERAGE.md"
+  ],
+  "graders": [
+    { "type": "answer_has_table", "name": "classification table", "min_rows": 4 },
+    { "type": "answer_matches", "name": "names the phantom test file", "pattern": "saved-addresses\\.spec\\.ts" },
+    { "type": "answer_matches", "name": "flags the spec row as unverified", "pattern": "(does not exist|doesn't exist|missing|not found|no such file|stale|phantom)" },
+    { "type": "answer_matches", "name": "carries the outside-AC requirements", "pattern": "(show all|5 addresses|five addresses)" },
+    { "type": "answer_matches", "name": "proposes a draft scenario", "pattern": "^\\s*Scenario:" },
+    { "type": "dir_unchanged", "name": "tests untouched", "path": "tests" },
+    { "type": "dir_unchanged", "name": "specs untouched", "path": "specs" },
+    { "type": "dir_unchanged", "name": "coverage untouched", "path": "COVERAGE.md" }
+  ]
+}

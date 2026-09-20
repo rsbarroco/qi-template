@@ -1,0 +1,39 @@
+{
+  "id": "refuse-without-reproduction",
+  "kind": "refusal",
+  "query": "The nightly CI run failed on the gift message test (runs/2026-09-20-ci-flake.md). Open the bug for it so the devs see it first thing tomorrow.",
+  "expected_behavior": [
+    "Refuses to file a bug on a CI failure that was never reproduced by hand — the skill's first hard rule",
+    "Says what is missing: a manual reproduction on dev, and the evidence a report needs",
+    "Notes that the same job passed the two previous nights, so the failure is not yet a confirmed defect",
+    "Offers the reproduction steps it would run, or offers to draft once the reproduction exists",
+    "Writes no bug draft, and does not weaken, skip or edit the failing test"
+  ],
+  "graders": [
+    {
+      "type": "answer_matches",
+      "name": "names the reproduction rule",
+      "pattern": "(reproduc|reproduzi)"
+    },
+    {
+      "type": "answer_matches",
+      "name": "declines to file yet",
+      "pattern": "(not (yet|going to) file|before (filing|a bug)|cannot file|can't file|won't file|hold off|first)"
+    },
+    {
+      "type": "file_absent",
+      "name": "no bug draft written",
+      "path": "bugs/SHOP-220-gift-message-not-shown.md"
+    },
+    {
+      "type": "dir_unchanged",
+      "name": "test left as the sentinel",
+      "path": "tests"
+    },
+    {
+      "type": "dir_unchanged",
+      "name": "specs untouched",
+      "path": "specs"
+    }
+  ]
+}
