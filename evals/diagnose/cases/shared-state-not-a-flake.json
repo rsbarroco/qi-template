@@ -1,0 +1,23 @@
+{
+  "id": "shared-state-not-a-flake",
+  "query": "tests/cart/promo-code.spec.ts fails in the full run and passes on its own. The runs are in runs/2026-09-21-promo-code.md. Find the cause.",
+  "expected_behavior": [
+    "Starts from the feedback signal already in the record instead of reading code first",
+    "Reads deterministic-in-the-suite, green-in-isolation as test ordering or shared state, not as a flake",
+    "Writes one hypothesis at a time in the skill's block: hypothesis, evidence for, evidence against, test",
+    "Follows the empty cart id in the 404 to tests/support/session.ts and the module-level activeCartId",
+    "Names the afterAll in tests/cart/apply-coupon.spec.ts that deletes the cart promo-code then reuses",
+    "Does not call it an app bug: the feature was reproduced by hand and works",
+    "Changes nothing outside tests/"
+  ],
+  "graders": [
+    { "type": "answer_matches", "name": "writes a hypothesis block", "pattern": "hypothesis" },
+    { "type": "answer_matches", "name": "weighs the evidence both ways", "pattern": "(evidence against|evidence for)" },
+    { "type": "answer_matches", "name": "reads the signal as ordering or shared state", "pattern": "(shared state|test ordering|leak|isolation|order of the files|module[- ]level)" },
+    { "type": "answer_matches", "name": "lands on the shared session helper", "pattern": "(session\\.ts|activeCartId|currentCart)" },
+    { "type": "answer_matches", "name": "names the teardown that removes the cart", "pattern": "(afterAll|apply-coupon|delete)" },
+    { "type": "answer_not_matches", "name": "does not call the feature broken", "pattern": "(app bug|application bug|the feature is broken)" },
+    { "type": "only_changed_under", "name": "only tests touched", "paths": ["tests"] },
+    { "type": "dir_unchanged", "name": "specs untouched", "path": "specs" }
+  ]
+}

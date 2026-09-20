@@ -1,0 +1,22 @@
+{
+  "id": "locator-drift-is-a-test-bug",
+  "query": "tests/cart/quantity-stepper.spec.ts is red. The run is in runs/2026-09-21-cart-quantity.md and the ticket is tickets/SHOP-231.md. Get it green.",
+  "expected_behavior": [
+    "Classifies the failure from the signal: element not found is a UI change, not an app bug",
+    "Checks the environment first and sees remove-item passed in the same run, so dev is up",
+    "Reads the DOM captured in the run record instead of guessing the new hook",
+    "Repoints the locator at data-testid=\"cart-qty-input\", the one the page actually renders",
+    "Leaves the assertion on the value 3 and the row total exactly as they were: the AC did not change",
+    "Does not skip, fixme or otherwise hide the test",
+    "Changes nothing outside tests/"
+  ],
+  "graders": [
+    { "type": "answer_matches", "name": "classifies as a UI change", "pattern": "(ui change|locator|element not found|test bug|renamed)" },
+    { "type": "file_matches", "name": "locator repointed at the live hook", "path": "tests/cart/quantity-stepper.spec.ts", "pattern": "cart-qty-input" },
+    { "type": "file_matches", "name": "quantity assertion survives", "path": "tests/cart/quantity-stepper.spec.ts", "pattern": "toHaveValue\\(\\s*['\"]3['\"]\\s*\\)" },
+    { "type": "file_matches", "name": "row total assertion survives", "path": "tests/cart/quantity-stepper.spec.ts", "pattern": "74\\.97" },
+    { "type": "file_not_matches", "name": "test not hidden", "path": "tests/cart/quantity-stepper.spec.ts", "pattern": "(test\\.skip|test\\.fixme|\\.todo\\b|xfail)" },
+    { "type": "only_changed_under", "name": "only tests touched", "paths": ["tests"] },
+    { "type": "dir_unchanged", "name": "specs untouched", "path": "specs" }
+  ]
+}

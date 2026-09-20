@@ -1,0 +1,18 @@
+{
+  "project_name": "Acme Shop QA",
+  "project_slug": "acme-shop-qa",
+  "tracker": "github_issues",
+  "tracker_project_key": "acme/shop",
+  "doc_platform": "none",
+  "sql_dbs": ["postgresql"],
+  "nosql_dbs": [],
+  "ui_web": true,
+  "ui_mobile_ios": false,
+  "ui_mobile_android": false,
+  "ui_mobile_framework": "appium",
+  "test_framework": "playwright",
+  "performance": "none",
+  "cloud": "none",
+  "queues": [],
+  "ci": "none"
+}
