@@ -109,3 +109,31 @@ def test_labels_and_report(isolated_runs, fake_claude):
     assert row["agree"] == 0          # graders said pass, human said fail — the gap we want to see
     assert report["judge_unlocked"] is False
     assert row["cost"] == 0.42
+
+
+def test_seed_activity_lands_in_the_isolated_tracker(isolated_runs, tmp_path):
+    """A skill that reads QI_ACTIVITY_DIR gets its records from seed-activity/.
+
+    The tracker lives outside the project, so seed/ cannot reach it; without this the
+    sprint-report suite could only ever be run against an empty tracker.
+    """
+    seed_activity = isolated_runs / "seed-activity"
+    seed_activity.mkdir()
+    (seed_activity / "SHOP-900.json").write_text(
+        json.dumps({"ticket": "SHOP-900", "sprint": "26-08", "manual": 2, "automated": 2}),
+        encoding="utf-8",
+    )
+
+    project, activity = runner.prepare_project("ticket-intake", tmp_path / "r-activity")
+
+    record = json.loads((activity / "SHOP-900.json").read_text(encoding="utf-8"))
+    assert record["ticket"] == "SHOP-900"
+    assert not (project / "SHOP-900.json").exists()      # the tracker is not the project
+    assert not (project / "seed-activity").exists()      # and seed-activity is not seeded into it
+
+
+def test_a_skill_without_seed_activity_still_gets_an_empty_tracker(isolated_runs, tmp_path):
+    assert not (isolated_runs / "seed-activity").exists()
+    _, activity = runner.prepare_project("ticket-intake", tmp_path / "r-empty")
+    assert activity.is_dir()
+    assert list(activity.iterdir()) == []

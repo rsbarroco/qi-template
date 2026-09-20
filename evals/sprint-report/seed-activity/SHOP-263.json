@@ -1,0 +1,16 @@
+{
+  "ticket": "SHOP-263",
+  "title": "Address deletion without reload",
+  "sprint": "26-08",
+  "sprint_label": "26-08",
+  "basis": "both",
+  "activity": "verify",
+  "qa": "rsbarroco",
+  "ai_used": "Yes - Claude",
+  "started_at": "2026-08-13T09:12:00+00:00",
+  "notes": [],
+  "manual": 3,
+  "automated": 3,
+  "reason": "",
+  "counted_at": "2026-08-28T16:40:00+00:00"
+}

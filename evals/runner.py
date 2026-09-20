@@ -62,6 +62,13 @@ def prepare_project(skill: str, run_dir: Path) -> tuple[Path, Path]:
     if seed.is_dir():
         shutil.copytree(seed, project, dirs_exist_ok=True)
 
+    # Records the skill reads out of QI_ACTIVITY_DIR, which lives outside the project and
+    # so cannot come from seed/. A JSON file on disk is a fixture the runner can honestly
+    # provide, unlike a browser or a database (docs/decisions/0001).
+    seed_activity = skill_dir(skill) / "seed-activity"
+    if seed_activity.is_dir():
+        shutil.copytree(seed_activity, activity, dirs_exist_ok=True)
+
     _git(project, "init", "-q")
     _git(project, "add", "-A")
     _git(project, "-c", "user.name=qi-evals", "-c", "user.email=evals@qi.local",

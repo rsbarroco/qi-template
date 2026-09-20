@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OrderQuote",
+  "description": "Response of GET /api/cart/quote. Contract owner: the checkout team.",
+  "type": "object",
+  "required": ["id", "status", "subtotal_cents", "tax_cents", "total_cents", "items", "applied_promotions"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^q_[a-z0-9]{8}$" },
+    "status": { "type": "string", "enum": ["draft", "priced", "expired"] },
+    "subtotal_cents": { "type": "integer", "minimum": 0 },
+    "tax_cents": { "type": "integer", "minimum": 0 },
+    "total_cents": { "type": "integer", "minimum": 0 },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["sku", "qty", "unit_cents"],
+        "properties": {
+          "sku": { "type": "string" },
+          "qty": { "type": "integer", "minimum": 1 },
+          "unit_cents": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "applied_promotions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "discount_cents"],
+        "properties": {
+          "code": { "type": "string" },
+          "discount_cents": { "type": "integer", "minimum": 1 }
+        }
+      }
+    }
+  }
+}

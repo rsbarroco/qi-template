@@ -1,0 +1,21 @@
+{
+  "ticket": "SHOP-264",
+  "title": "Gift message at checkout",
+  "sprint": "26-08",
+  "sprint_label": "26-08",
+  "basis": "plan",
+  "activity": "verify",
+  "qa": "rsbarroco",
+  "ai_used": "Yes - Claude",
+  "started_at": "2026-08-14T09:12:00+00:00",
+  "notes": [
+    {
+      "ts": "2026-08-20T11:02:00+00:00",
+      "text": "basis ac -> plan"
+    }
+  ],
+  "manual": 6,
+  "automated": 0,
+  "reason": "the mail sandbox has no test hook on dev; the six cases stay manual until SHOP-271 lands",
+  "counted_at": "2026-08-28T16:40:00+00:00"
+}

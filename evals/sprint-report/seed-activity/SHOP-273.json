@@ -1,0 +1,12 @@
+{
+  "ticket": "SHOP-273",
+  "title": "Promo code on the cart total",
+  "sprint": "26-09",
+  "sprint_label": "26-09",
+  "basis": "ac",
+  "activity": "verify",
+  "qa": "rsbarroco",
+  "ai_used": "Yes - Claude",
+  "started_at": "2026-08-13T09:12:00+00:00",
+  "notes": []
+}

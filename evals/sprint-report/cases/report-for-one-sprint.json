@@ -1,0 +1,20 @@
+{
+  "id": "report-for-one-sprint",
+  "query": "Sprint 26-08 closed. Give me the AI-usage report for it, straight from scripts/qa_track.py.",
+  "expected_behavior": [
+    "Runs the status check first, as Step 1 requires, before generating anything",
+    "Sees SHOP-273 flagged as missing counts, reads its sprint field, and says in one line that it belongs to 26-09 and is out of scope here",
+    "Does not treat an out-of-sprint gap as a reason to stop, and does not fill it in either",
+    "Generates the report for 26-08 and presents the four tickets: SHOP-262, SHOP-263, SHOP-264, SHOP-265",
+    "Keeps SHOP-264 at 0 automated and carries its reason rather than rounding it up",
+    "Does not add a ticket, a count or a basis that is not in a record"
+  ],
+  "graders": [
+    { "type": "answer_has_table", "name": "one row per ticket in the sprint", "min_rows": 4 },
+    { "type": "answer_matches", "name": "names the first ticket of the sprint", "pattern": "SHOP-262" },
+    { "type": "answer_matches", "name": "names the last ticket of the sprint", "pattern": "SHOP-265" },
+    { "type": "answer_matches", "name": "carries the reason for the zero", "pattern": "(mail sandbox|SHOP-271)" },
+    { "type": "answer_matches", "name": "checked the tracker before reporting", "pattern": "(status|missing counts|complete)" },
+    { "type": "answer_not_matches", "name": "no guessed numbers", "pattern": "(estimate|roughly|approximately \\d|assume|probably \\d)" }
+  ]
+}

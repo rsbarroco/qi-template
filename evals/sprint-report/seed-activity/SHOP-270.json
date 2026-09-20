@@ -1,0 +1,16 @@
+{
+  "ticket": "SHOP-270",
+  "title": "Email receipt for guest checkout",
+  "sprint": "26-09",
+  "sprint_label": "26-09",
+  "basis": "both",
+  "activity": "verify",
+  "qa": "rsbarroco",
+  "ai_used": "Yes - Claude",
+  "started_at": "2026-08-10T09:12:00+00:00",
+  "notes": [],
+  "manual": 5,
+  "automated": 5,
+  "reason": "",
+  "counted_at": "2026-08-28T16:40:00+00:00"
+}
