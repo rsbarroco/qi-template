@@ -23,7 +23,7 @@ def project(render, run_script, tmp_path, monkeypatch):
             return proc
 
         def record(self, ticket):
-            return json.loads((activity / f"{ticket}.json").read_text())
+            return json.loads((activity / f"{ticket}.json").read_text(encoding="utf-8"))
 
     return Ctx()
 

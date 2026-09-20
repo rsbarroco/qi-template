@@ -16,7 +16,7 @@ SPEC = """# Checkout — Test Spec
 
 def _seed(project, spec_text=SPEC, name="checkout.md"):
     (project / "specs").mkdir(exist_ok=True)
-    (project / "specs" / name).write_text(spec_text)
+    (project / "specs" / name).write_text(spec_text, encoding="utf-8")
 
 
 def test_counts_automated_partial_and_manual_rows(render, run_script):
@@ -40,10 +40,10 @@ def test_header_and_separator_rows_are_not_counted(render, run_script):
 def test_summary_row_in_coverage_md_is_rewritten(render, run_script):
     project = render()
     _seed(project)
-    before = (project / "COVERAGE.md").read_text()
+    before = (project / "COVERAGE.md").read_text(encoding="utf-8")
     assert "| 0 | 0 | 0% |" in before                      # the seed row the regex targets
     run_script(project, "scripts/coverage_report.py")
-    after = (project / "COVERAGE.md").read_text()
+    after = (project / "COVERAGE.md").read_text(encoding="utf-8")
     assert "| 4 | 2 | 50% |" in after
     assert "| 0 | 0 | 0% |" not in after
     # only the summary row changed
@@ -85,10 +85,10 @@ def test_no_specs_dir_reports_zero_without_crashing(render, run_script):
 def test_verify_fails_when_coverage_md_is_stale_and_writes_nothing(render, run_script):
     project = render()
     _seed(project)
-    before = (project / "COVERAGE.md").read_text()
+    before = (project / "COVERAGE.md").read_text(encoding="utf-8")
     out = run_script(project, "scripts/coverage_report.py", "--verify")
     assert out.returncode == 1 and "COVERAGE.md is stale" in out.stdout
-    assert (project / "COVERAGE.md").read_text() == before
+    assert (project / "COVERAGE.md").read_text(encoding="utf-8") == before
 
 
 def test_verify_passes_after_a_regeneration(render, run_script):

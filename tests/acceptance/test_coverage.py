@@ -20,7 +20,7 @@ def _spec(auto: int, partial: int, manual: int) -> str:
 def project_with_spec(render, run_script, domain, auto, partial, manual):
     proj = render()
     (proj / "specs").mkdir(exist_ok=True)
-    (proj / "specs" / f"{domain}.md").write_text(_spec(auto, partial, manual))
+    (proj / "specs" / f"{domain}.md").write_text(_spec(auto, partial, manual), encoding="utf-8")
     return {"project": proj, "run": run_script, "last": None}
 
 
@@ -33,7 +33,7 @@ def recompute(ctx):
 @when(parsers.parse('the "{domain}" spec flips one manual row to automated'))
 def flip_row(ctx, domain):
     p = ctx["project"] / "specs" / f"{domain}.md"
-    p.write_text(p.read_text().replace("| ❌ |", "| ✅ |", 1))
+    p.write_text(p.read_text(encoding="utf-8").replace("| ❌ |", "| ✅ |", 1), encoding="utf-8")
 
 
 @when("I run the coverage check")
@@ -43,7 +43,7 @@ def run_check(ctx):
 
 @then(parsers.parse('COVERAGE.md reports {total:d} cases, {auto:d} automated and "{pct}"'))
 def coverage_reports(ctx, total, auto, pct):
-    assert f"| {total} | {auto} | {pct} |" in (ctx["project"] / "COVERAGE.md").read_text()
+    assert f"| {total} | {auto} | {pct} |" in (ctx["project"] / "COVERAGE.md").read_text(encoding="utf-8")
 
 
 @then(parsers.parse('the check fails mentioning "{text}"'))

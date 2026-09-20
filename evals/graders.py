@@ -83,7 +83,7 @@ def json_field_equals(state: RunState, cfg: dict) -> GraderResult:
     if not p.exists():
         return GraderResult(name, False, "file missing")
     try:
-        value = json.loads(p.read_text()).get(cfg["field"])
+        value = json.loads(p.read_text(encoding="utf-8")).get(cfg["field"])
     except json.JSONDecodeError as e:
         return GraderResult(name, False, f"invalid json: {e}")
     return GraderResult(name, value == cfg["value"], f"{cfg['field']}={value!r}")
@@ -104,7 +104,7 @@ def file_matches(state: RunState, cfg: dict) -> GraderResult:
     name = cfg.get("name", f"file_matches:{cfg['path']}:{cfg['pattern']}")
     if not p.exists():
         return GraderResult(name, False, "file missing")
-    ok = re.search(cfg["pattern"], p.read_text(errors="replace"), re.IGNORECASE | re.MULTILINE) is not None
+    ok = re.search(cfg["pattern"], p.read_text(encoding="utf-8", errors="replace"), re.IGNORECASE | re.MULTILINE) is not None
     return GraderResult(name, ok, cfg["pattern"])
 
 
@@ -115,7 +115,7 @@ def file_not_matches(state: RunState, cfg: dict) -> GraderResult:
     name = cfg.get("name", f"file_not_matches:{cfg['path']}:{cfg['pattern']}")
     if not p.exists():
         return GraderResult(name, False, "file missing")
-    m = re.search(cfg["pattern"], p.read_text(errors="replace"), re.IGNORECASE | re.MULTILINE)
+    m = re.search(cfg["pattern"], p.read_text(encoding="utf-8", errors="replace"), re.IGNORECASE | re.MULTILINE)
     return GraderResult(name, m is None, f"found {m.group(0)!r}" if m else cfg["pattern"])
 
 

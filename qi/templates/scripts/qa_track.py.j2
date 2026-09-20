@@ -35,12 +35,12 @@ def _record_path(ticket: str) -> Path:
 def _load(ticket: str) -> dict:
     p = _record_path(ticket)
     if p.exists():
-        return json.loads(p.read_text())
+        return json.loads(p.read_text(encoding="utf-8"))
     return {}
 
 
 def _save(ticket: str, data: dict) -> None:
-    _record_path(ticket).write_text(json.dumps(data, indent=2))
+    _record_path(ticket).write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
 def _now() -> str:
@@ -54,7 +54,8 @@ def _qa_name() -> str:
     try:
         import subprocess
         result = subprocess.run(
-            ["git", "config", "user.name"], capture_output=True, text=True
+            ["git", "config", "user.name"], capture_output=True, text=True,
+            encoding="utf-8", errors="replace",
         )
         if result.returncode == 0 and result.stdout.strip():
             return result.stdout.strip()
@@ -141,7 +142,7 @@ def cmd_status(args: argparse.Namespace) -> None:
         return
     missing = []
     for p in records:
-        d = json.loads(p.read_text())
+        d = json.loads(p.read_text(encoding="utf-8"))
         if "manual" not in d or "automated" not in d:
             missing.append(d.get("ticket", p.stem))
     if missing:
@@ -151,7 +152,7 @@ def cmd_status(args: argparse.Namespace) -> None:
 
 
 def cmd_report(args: argparse.Namespace) -> None:
-    records = [json.loads(p.read_text()) for p in TRACKER_DIR.glob("*.json")]
+    records = [json.loads(p.read_text(encoding="utf-8")) for p in TRACKER_DIR.glob("*.json")]
     sprint_records = [
         r for r in records if r.get("sprint") == args.sprint or r.get("sprint_label") == args.sprint
     ]

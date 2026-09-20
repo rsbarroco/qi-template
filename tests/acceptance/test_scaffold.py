@@ -47,14 +47,14 @@ def run_dry(config, tmp_path, monkeypatch):
 
 @then(parsers.parse('CLAUDE.md names "{tracker}" as the task tracker'))
 def claude_names_tracker(project, tracker):
-    assert re.search(rf"Task tracker.*\b{re.escape(tracker)}\b", (project / "CLAUDE.md").read_text())
+    assert re.search(rf"Task tracker.*\b{re.escape(tracker)}\b", (project / "CLAUDE.md").read_text(encoding="utf-8"))
 
 
 @then("no generated file contains unrendered template markup")
 def no_jinja_left(project):
     for p in project.rglob("*"):
         if p.is_file():
-            assert not re.search(r"(?<!\$){{|{%|%}", p.read_text()), p
+            assert not re.search(r"(?<!\$){{|{%|%}", p.read_text(encoding="utf-8")), p
 
 
 @then("exactly the core skills are generated")
@@ -69,7 +69,7 @@ def no_ci(project):
 
 @then(parsers.parse('the mobile skill mentions "{framework}"'))
 def mobile_mentions(project, framework):
-    assert framework in (project / ".claude/skills/mobile/SKILL.md").read_text()
+    assert framework in (project / ".claude/skills/mobile/SKILL.md").read_text(encoding="utf-8")
 
 
 @then(parsers.parse('the output lists "{name}"'))

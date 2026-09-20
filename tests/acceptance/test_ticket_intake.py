@@ -32,7 +32,7 @@ class Agent:
 
     def write_dossier(self, text: str) -> None:
         self.dossier.parent.mkdir(parents=True, exist_ok=True)
-        self.dossier.write_text(text)
+        self.dossier.write_text(text, encoding="utf-8")
 
     def state(self) -> RunState:
         return RunState(project=self.project, activity_dir=self.activity, baseline=self.baseline, answer=self.answer)
@@ -61,16 +61,17 @@ def write_good_dossier(agent, pr, parent, child):
 
 @when(parsers.parse('the dossier marks "{key}" as NOT FOUND'))
 def mark_not_found(agent, key):
-    agent.dossier.write_text(agent.dossier.read_text() + f"| {key} | relates (comment by po.lucas) | NOT FOUND |\n")
+    agent.dossier.write_text(agent.dossier.read_text(encoding="utf-8") + f"| {key} | relates (comment by po.lucas) | NOT FOUND |\n", encoding="utf-8")
 
 
 @when(parsers.parse('the dossier records the "{cap}" cap from the PDF and the "{behaviour}" from the diff'))
 def record_outside_ac(agent, cap, behaviour):
     agent.dossier.write_text(
-        agent.dossier.read_text()
+        agent.dossier.read_text(encoding="utf-8")
         + f"\n## 7. Requirements found outside the ACs\n| # | Requirement | Source |\n|---|---|---|\n"
         f"| R1 | Percentage coupons are capped at {cap} | discount-rules-v3.pdf |\n"
-        f"| R2 | Codes are normalised by {behaviour} before lookup | PR #42 diff |\n"
+        f"| R2 | Codes are normalised by {behaviour} before lookup | PR #42 diff |\n",
+        encoding="utf-8",
     )
 
 
@@ -99,7 +100,7 @@ def write_bad_dossier(agent, ghost, invented):
 @when(parsers.parse('the agent writes a test file under "{folder}"'))
 def write_test_early(agent, folder):
     (agent.project / folder).mkdir(parents=True, exist_ok=True)
-    (agent.project / folder / "coupon-expired.spec.ts").write_text("test('x', () => {});\n")
+    (agent.project / folder / "coupon-expired.spec.ts").write_text("test('x', () => {});\n", encoding="utf-8")
 
 
 def _graders(case_id: str) -> list[dict]:

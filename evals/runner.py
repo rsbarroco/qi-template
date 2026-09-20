@@ -34,7 +34,7 @@ def skill_dir(skill: str) -> Path:
 def load_cases(skill: str, only: str | None = None) -> list[dict]:
     cases = []
     for p in sorted((skill_dir(skill) / "cases").glob("*.json")):
-        case = json.loads(p.read_text())
+        case = json.loads(p.read_text(encoding="utf-8"))
         case.setdefault("id", p.stem)
         if only and case["id"] != only:
             continue
@@ -45,7 +45,7 @@ def load_cases(skill: str, only: str | None = None) -> list[dict]:
 
 
 def load_fixture_config(skill: str) -> Config:
-    data = json.loads((skill_dir(skill) / "fixture.json").read_text())
+    data = json.loads((skill_dir(skill) / "fixture.json").read_text(encoding="utf-8"))
     return Config(**data)
 
 
@@ -69,10 +69,21 @@ def prepare_project(skill: str, run_dir: Path) -> tuple[Path, Path]:
     return project, activity
 
 
+def resolve_claude_bin(name: str) -> str:
+    """The command to exec for `name`, resolved through PATH and PATHEXT.
+
+    On Windows the Claude CLI installs as `claude.CMD`, and subprocess without a shell
+    only ever appends `.exe`, so the bare name raises FileNotFoundError. The baseline is
+    run on the QA engineer's Windows machine, so unresolved means no evals at all there.
+    Falls back to `name` untouched so the error still names what was asked for.
+    """
+    return shutil.which(name) or name
+
+
 def run_claude(project: Path, activity: Path, query: str, *, model: str | None,
                max_budget_usd: float, allowed_tools: list[str]) -> dict:
     """Invoke the Claude Code CLI headlessly. Uses whatever login the CLI already has."""
-    claude_bin = os.environ.get("QI_EVAL_CLAUDE_BIN", "claude")
+    claude_bin = resolve_claude_bin(os.environ.get("QI_EVAL_CLAUDE_BIN", "claude"))
     cmd = [
         claude_bin, "-p", query,
         "--output-format", "json",
@@ -85,7 +96,8 @@ def run_claude(project: Path, activity: Path, query: str, *, model: str | None,
 
     env = {**os.environ, "QI_ACTIVITY_DIR": str(activity)}
     started = time.time()
-    proc = subprocess.run(cmd, cwd=project, env=env, capture_output=True, text=True)
+    proc = subprocess.run(cmd, cwd=project, env=env, capture_output=True,
+                          text=True, encoding="utf-8", errors="replace")
     wall = time.time() - started
 
     try:
@@ -141,9 +153,9 @@ def run_case(skill: str, case: dict, *, dry_run: bool, model: str | None,
         "answer": outcome["answer"],
         "run_dir": str(run_dir),
     }
-    (run_dir / "run.json").write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n")
+    (run_dir / "run.json").write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     if not dry_run:  # dry runs prove graders can fail; they are not data about the agent
-        with (skill_dir(skill) / "runs.jsonl").open("a") as fh:
+        with (skill_dir(skill) / "runs.jsonl").open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(record, ensure_ascii=False) + "\n")
     return record
 

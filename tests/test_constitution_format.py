@@ -31,12 +31,12 @@ def _frontmatter(text: str) -> dict | None:
 @pytest.mark.parametrize("overrides", [{}, FULL], ids=["minimal", "full"])
 def test_claude_md_is_under_200_lines(render, overrides):
     project = render(**overrides)
-    lines = (project / "CLAUDE.md").read_text().splitlines()
+    lines = (project / "CLAUDE.md").read_text(encoding="utf-8").splitlines()
     assert len(lines) < MAX_CLAUDE_MD_LINES, len(lines)
 
 
 def test_claude_md_points_at_rules_skills_autonomy_and_hooks(render):
-    text = (render() / "CLAUDE.md").read_text()
+    text = (render() / "CLAUDE.md").read_text(encoding="utf-8")
     for needle in [".claude/rules/", ".claude/skills/<name>/SKILL.md", "AUTONOMY.md", ".claude/hooks/", "docs/decisions/"]:
         assert needle in text, needle
 
@@ -47,7 +47,7 @@ def test_every_skill_is_a_folder_with_skill_md_and_frontmatter(render, overrides
     folders = list((project / ".claude/skills").iterdir())
     assert folders and all(f.is_dir() for f in folders)
     for folder in folders:
-        text = (folder / "SKILL.md").read_text()
+        text = (folder / "SKILL.md").read_text(encoding="utf-8")
         fm = _frontmatter(text)
         assert fm is not None, folder.name
         assert fm["name"] == folder.name
@@ -70,13 +70,13 @@ def test_side_effect_skills_are_not_model_invocable(render):
         path = project / ".claude/skills" / name / "SKILL.md"
         if not path.exists():
             continue
-        fm = _frontmatter(path.read_text())
+        fm = _frontmatter(path.read_text(encoding="utf-8"))
         assert fm.get("disable-model-invocation", False) is meta.side_effect, name
     assert {m.name for m in SKILLS.values() if m.side_effect} == {"comm-broadcast", "report-bug"}
 
 
 def test_claude_md_names_the_side_effect_skills(render):
-    text = (render(**FULL) / "CLAUDE.md").read_text()
+    text = (render(**FULL) / "CLAUDE.md").read_text(encoding="utf-8")
     assert "`comm-broadcast`, `report-bug`" in text and "disable-model-invocation" in text
 
 
@@ -92,7 +92,7 @@ def test_every_skill_template_has_a_catalogue_entry():
 ])
 def test_rules_carry_paths_frontmatter_when_scoped(render, rule, scoped):
     project = render(**FULL)
-    text = (project / ".claude/rules" / f"{rule}.md").read_text()
+    text = (project / ".claude/rules" / f"{rule}.md").read_text(encoding="utf-8")
     fm = _frontmatter(text)
     if scoped:
         assert fm and isinstance(fm["paths"], list) and fm["paths"], rule
@@ -111,8 +111,8 @@ def test_pipeline_rule_only_in_pipeline_mode(render):
 
 def test_autonomy_json_is_valid_and_agrees_with_autonomy_md(render):
     project = render(**FULL)
-    cfg = json.loads((project / ".claude/autonomy.json").read_text())
-    md = (project / "AUTONOMY.md").read_text()
+    cfg = json.loads((project / ".claude/autonomy.json").read_text(encoding="utf-8"))
+    md = (project / "AUTONOMY.md").read_text(encoding="utf-8")
     assert cfg["tasks"]["merge-pr"] == 0 and cfg["tasks"]["case-approve"] == 0 and cfg["tasks"]["comm-post"] == 0
     assert all(0 <= v <= 3 for v in cfg["tasks"].values())
     for task, level in cfg["tasks"].items():
@@ -121,9 +121,9 @@ def test_autonomy_json_is_valid_and_agrees_with_autonomy_md(render):
 
 
 def test_autonomy_tasks_follow_the_stack(render):
-    minimal = json.loads((render() / ".claude/autonomy.json").read_text())["tasks"]
+    minimal = json.loads((render() / ".claude/autonomy.json").read_text(encoding="utf-8"))["tasks"]
     assert "comm-post" not in minimal and "tracker-transition" not in minimal and "doc-publish" not in minimal
-    full = json.loads((render(**FULL) / ".claude/autonomy.json").read_text())
+    full = json.loads((render(**FULL) / ".claude/autonomy.json").read_text(encoding="utf-8"))
     assert {"comm-post", "tracker-transition", "bug-report", "doc-publish"} <= set(full["tasks"])
     assert any(g["task"] == "execute-on-staging" for g in full["gates"])     # performance tool gated
 
@@ -132,9 +132,9 @@ def test_autonomy_tasks_follow_the_stack(render):
 
 def test_dependabot_only_with_github_actions_and_follows_the_stack(render):
     assert not (render(ci="gitlab_ci") / ".github/dependabot.yml").exists()
-    pip_only = yaml.safe_load((render(ci="github_actions", test_framework="robot") / ".github/dependabot.yml").read_text())
+    pip_only = yaml.safe_load((render(ci="github_actions", test_framework="robot") / ".github/dependabot.yml").read_text(encoding="utf-8"))
     assert [u["package-ecosystem"] for u in pip_only["updates"]] == ["pip", "github-actions"]
-    npm = yaml.safe_load((render(ci="github_actions", test_framework="playwright") / ".github/dependabot.yml").read_text())
+    npm = yaml.safe_load((render(ci="github_actions", test_framework="playwright") / ".github/dependabot.yml").read_text(encoding="utf-8"))
     ecosystems = {u["package-ecosystem"]: u for u in npm["updates"]}
     assert set(ecosystems) == {"pip", "npm", "github-actions"}
     assert ecosystems["npm"]["ignore"][0]["dependency-name"] == "playwright"
@@ -142,7 +142,7 @@ def test_dependabot_only_with_github_actions_and_follows_the_stack(render):
 
 
 def test_dependencies_rule_names_the_validation_and_the_task(render):
-    text = (render() / ".claude/rules/dependencies.md").read_text()
+    text = (render() / ".claude/rules/dependencies.md").read_text(encoding="utf-8")
     assert "merge-dependency-pr" in text and "CI is green" in text and "changelog" in text.lower()
 
 
@@ -150,5 +150,5 @@ def test_adr_scaffold_with_a_confirmed_first_decision(render):
     project = render()
     adrs = sorted(p.name for p in (project / "docs/decisions").iterdir())
     assert adrs == ["0001-hooks-enforce-the-constitution.md", "README.md", "TEMPLATE.md"]
-    first = (project / "docs/decisions/0001-hooks-enforce-the-constitution.md").read_text()
+    first = (project / "docs/decisions/0001-hooks-enforce-the-constitution.md").read_text(encoding="utf-8")
     assert "**Status:** accepted" in first and "## Confirmation" in first and "--self-test" in first

@@ -48,6 +48,7 @@ def run_script():
         return subprocess.run(
             [sys.executable, str(project / script), *args],
             cwd=project, capture_output=True, text=True, env=full_env,
+            encoding="utf-8", errors="replace",
         )
 
     return _run

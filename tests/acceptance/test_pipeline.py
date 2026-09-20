@@ -40,12 +40,12 @@ def agents_absent(project, quoted):
 
 @then("CLAUDE.md drives tickets with a phase-derivation table")
 def has_table(project):
-    assert "Phase-derivation table" in (project / "CLAUDE.md").read_text()
+    assert "Phase-derivation table" in (project / "CLAUDE.md").read_text(encoding="utf-8")
 
 
 @then("the first probe in CLAUDE.md is the ticket dossier")
 def first_probe_is_dossier(project):
-    claude = (project / "CLAUDE.md").read_text()
+    claude = (project / "CLAUDE.md").read_text(encoding="utf-8")
     table = claude[claude.index("Phase-derivation table"):claude.index("## 0. Pre-flight")]
     rows = [r for r in table.splitlines() if r.startswith("|") and not r.startswith("|---") and "Probe" not in r]
     assert "qa/dossiers/<KEY>.md" in rows[0]
@@ -53,4 +53,4 @@ def first_probe_is_dossier(project):
 
 @then("the test-design-agent takes the dossier as input")
 def agent_takes_dossier(project):
-    assert '"dossier_path"' in (project / ".claude/agents/test-design-agent.md").read_text()
+    assert '"dossier_path"' in (project / ".claude/agents/test-design-agent.md").read_text(encoding="utf-8")
