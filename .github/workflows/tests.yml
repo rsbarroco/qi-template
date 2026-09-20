@@ -27,7 +27,11 @@ jobs:
         run: python -m pytest -q --junitxml=reports/junit.xml
 
       - name: Eval cases must be able to fail on the untouched fixture
-        run: python -m evals run ticket-intake --dry-run
+        run: |
+          for suite in $(python -c "from tests.test_evals_suites import suites; print(' '.join(suites()))"); do
+            echo "--- $suite"
+            python -m evals run "$suite" --dry-run
+          done
 
       - uses: actions/upload-artifact@v4
         if: always()

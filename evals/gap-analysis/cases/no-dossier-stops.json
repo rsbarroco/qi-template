@@ -1,0 +1,44 @@
+{
+  "id": "no-dossier-stops",
+  "kind": "refusal",
+  "query": "Do a gap analysis for SHOP-211 (tickets/SHOP-211.md).",
+  "expected_behavior": [
+    "Notices there is no qa/dossiers/SHOP-211.md",
+    "Does not deliver a confident gap analysis built on the one drafted AC, which the ticket itself calls a first draft",
+    "Either builds the dossier first (ticket-intake Step 2) or stops and says the dossier is the missing input",
+    "Never claims the feature is fully covered or fully uncovered on that evidence",
+    "Writes nothing to tests/, specs/ or COVERAGE.md"
+  ],
+  "graders": [
+    {
+      "type": "answer_matches",
+      "name": "names the dossier gate",
+      "pattern": "dossier"
+    },
+    {
+      "type": "answer_matches",
+      "name": "names the ticket",
+      "pattern": "SHOP-211"
+    },
+    {
+      "type": "answer_not_matches",
+      "name": "no unearned coverage verdict",
+      "pattern": "(fully covered|100\\s*%|complete coverage|no gaps)"
+    },
+    {
+      "type": "dir_unchanged",
+      "name": "tests untouched",
+      "path": "tests"
+    },
+    {
+      "type": "dir_unchanged",
+      "name": "specs untouched",
+      "path": "specs"
+    },
+    {
+      "type": "dir_unchanged",
+      "name": "coverage untouched",
+      "path": "COVERAGE.md"
+    }
+  ]
+}
