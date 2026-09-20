@@ -6,6 +6,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
+AGENT_PREFIX = "agent:"
+
+
+def is_agent(label: dict) -> bool:
+    """A label written by an agent, not a person. The promotion rule in AUTONOMY.md and
+    the LLM judge both rest on human verdicts; an agent grading its own run is evidence,
+    never a substitute."""
+    return str(label.get("labeler", "")).lower().startswith(AGENT_PREFIX)
+
+
 def read_jsonl(path: Path) -> list[dict]:
     if not path.exists():
         return []

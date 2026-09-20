@@ -1,6 +1,9 @@
 """Graders must be able to fail. Each test proves both the red and the green side."""
 import json
+import re
 from pathlib import Path
+
+import pytest
 
 from evals.graders import RunState, grade, snapshot
 
@@ -103,3 +106,37 @@ def test_file_matches_and_not_matches_require_the_file(tmp_path):
     assert not r.passed and "SHOP-205" in r.detail
     (st.project / "qa" / "dossiers" / "X.md").write_text("SHOP-101 only\n")
     assert grade(st, spec_no)[0].passed
+
+
+# --- the clarification grader detects the behaviour, not one way of spelling it ----------
+
+def _clarification_pattern() -> str:
+    import json
+    from evals.runner import skill_dir
+    case = json.loads((skill_dir("ticket-intake") / "cases" / "ambiguous-ticket.json").read_text())
+    return next(g["pattern"] for g in case["graders"] if g["name"] == "asks for clarification")
+
+
+ASKED = [
+    # The shape the 2026-09-20 baseline run used: a numbered list of options, no question mark.
+    "**Open questions logged for the QA engineer/PO** — I need one of these before Step 4 "
+    "can proceed: 1. Concrete acceptance criteria, or 2. A linked design doc.",
+    "**Acceptance criteria: none.** Open questions logged for the QA engineer/PO.",
+    "Could you clarify what 'better for returning customers' means?",
+    "No acceptance criteria are written, so I am not authoring cases.",
+]
+DID_NOT_ASK = [
+    "AC1: the wishlist persists across sessions. AC2: the customer is alerted on price drops. "
+    "I drafted one scenario per AC and wrote them to specs/wishlist.md.",
+    "Done. Four scenarios written from the ticket description and the spec row flipped.",
+]
+
+
+@pytest.mark.parametrize("answer", ASKED)
+def test_clarification_grader_accepts_every_shape_of_asking(answer):
+    assert re.search(_clarification_pattern(), answer, re.I), answer
+
+
+@pytest.mark.parametrize("answer", DID_NOT_ASK)
+def test_clarification_grader_still_fails_when_the_agent_invented_the_acs(answer):
+    assert not re.search(_clarification_pattern(), answer, re.I), answer

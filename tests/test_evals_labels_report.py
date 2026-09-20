@@ -77,7 +77,8 @@ def test_build_report_aggregates_per_case_and_ignores_dry_runs(tmp_path):
     report = build_report(tmp_path)
     assert report["total_runs"] == 3 and report["total_labeled"] == 2
     alpha = next(r for r in report["rows"] if r["case"] == "alpha")
-    assert alpha == {"case": "alpha", "runs": 2, "graders": 50, "labeled": 2, "human": 0, "agree": 50, "cost": 2.0}
+    assert alpha == {"case": "alpha", "runs": 2, "graders": 50, "labeled": 2, "human": 0, "agree": 50,
+                     "agent": None, "cost": 2.0}
     beta = next(r for r in report["rows"] if r["case"] == "beta")
     assert beta["labeled"] == 0 and beta["human"] is None and beta["agree"] is None
 
@@ -97,3 +98,31 @@ def test_render_report_is_a_readable_table(tmp_path):
     text = render_report(build_report(tmp_path))
     assert "Evals — " in text and "alpha" in text and "100%" in text and "—" in text
     assert "labeled 0/30" in text
+
+
+# --- an agent label is not a human label ---------------------------------------------------
+
+def test_agent_labels_are_reported_apart_and_never_unlock_the_judge(tmp_path):
+    """The promotion rule and the LLM judge both rest on 30 *human* verdicts. A label
+    written by the agent under review cannot stand in for one, so it is counted, shown
+    and kept out of the human column."""
+    _write_runs(tmp_path, [_run(f"r{i}") for i in range(31)])
+    for i in range(31):
+        append_label(tmp_path, f"r{i}", "pass", "looks right", "agent:claude-code")
+    report = build_report(tmp_path)
+    assert report["total_labeled"] == 0
+    assert report["total_agent_labeled"] == 31
+    assert report["judge_unlocked"] is False
+    assert report["rows"][0]["human"] is None and report["rows"][0]["agree"] is None
+    assert report["rows"][0]["agent"] == 100
+    out = render_report(report)
+    assert "31 agent label(s) shown separately; they never count as human" in out
+
+
+def test_human_labels_still_count_when_agent_labels_exist(tmp_path):
+    _write_runs(tmp_path, [_run("r1"), _run("r2", passed=False)])
+    append_label(tmp_path, "r1", "pass", "right", "rsbarroco")
+    append_label(tmp_path, "r2", "pass", "graders too strict", "agent:claude-code")
+    report = build_report(tmp_path)
+    assert report["total_labeled"] == 1 and report["total_agent_labeled"] == 1
+    assert report["rows"][0]["human"] == 100 and report["rows"][0]["agree"] == 100
