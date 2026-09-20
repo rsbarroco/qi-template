@@ -15,6 +15,30 @@ app = typer.Typer(name="evals", help="Run, label and report skill evals.", add_c
 console = Console()
 
 
+def printable(text: str) -> str:
+    """`text`, with anything the console cannot encode replaced by `?`.
+
+    `grader_marks()` below covers the marks this file chooses. It does not cover the text
+    it is handed: a grader's name and detail come from the case file, and a case may
+    legitimately grep for U+2705 — `verify-ticket/never-start-on-staging` does. So do a
+    final answer and a claude stderr tail. rich writes to a Windows console through the
+    Win32 API, which encodes on the console code page, so one such character anywhere in
+    that text raised UnicodeEncodeError out of rich and took the run down *after* the
+    grading had already happened.
+
+    Only the screen degrades. runs.jsonl keeps the original, written as UTF-8.
+    """
+    encoding = getattr(sys.stdout, "encoding", None) or "ascii"
+    try:
+        text.encode(encoding)
+        return text
+    except UnicodeEncodeError:
+        pass
+    except LookupError:
+        encoding = "ascii"
+    return text.encode(encoding, "replace").decode(encoding, "replace")
+
+
 def grader_marks(encoding: str | None) -> tuple[str, str]:
     """(pass, fail) marks the current console can actually print.
 
@@ -47,14 +71,15 @@ def run(
                            max_budget_usd=max_budget_usd)
             total_cost += float(rec.get("total_cost_usd") or 0)
             status = "[green]PASS[/green]" if rec["all_graders_passed"] else "[red]FAIL[/red]"
-            console.print(f"{status}  {rec['case']}  run {i + 1}/{runs}  "
+            console.print(f"{status}  {printable(rec['case'])}  run {i + 1}/{runs}  "
                           f"${rec.get('total_cost_usd') or 0:.3f}  {len(rec['changed_files'])} files changed")
             ok_mark, bad_mark = grader_marks(getattr(sys.stdout, "encoding", None))
             for g in rec["graders"]:
                 mark = ok_mark if g["passed"] else bad_mark
-                console.print(f"       {mark} {g['name']}  [dim]{g['detail']}[/dim]")
+                console.print(f"       {mark} {printable(g['name'])}  "
+                              f"[dim]{printable(g['detail'])}[/dim]")
             if rec.get("is_error") and not dry_run:
-                console.print(f"       [yellow]claude exited {rec['exit_code']}[/yellow] {rec['stderr_tail'][-300:]}")
+                console.print(f"       [yellow]claude exited {rec['exit_code']}[/yellow] {printable(rec['stderr_tail'][-300:])}")
     console.print(f"\n[bold]total cost[/bold] ${total_cost:.2f} across {len(cases) * runs} run(s)")
 
 
@@ -70,7 +95,7 @@ def label(skill: str, labeler: str | None = typer.Option(None, "--labeler")) -> 
     console.print(f"{len(pending)} unlabeled run(s). Verdict: p = pass, f = fail, s = skip, q = quit.\n")
     for run_rec in pending:
         console.rule(run_rec["run_id"])
-        console.print(labels_mod.summarize_run(run_rec))
+        console.print(printable(labels_mod.summarize_run(run_rec)))
         choice = typer.prompt("verdict [p/f/s/q]").strip().lower()
         if choice == "q":
             break
@@ -87,7 +112,7 @@ def label(skill: str, labeler: str | None = typer.Option(None, "--labeler")) -> 
 @app.command()
 def report(skill: str) -> None:
     """Pass rates by case, human agreement, cost."""
-    console.print(report_mod.render_report(report_mod.build_report(skill_dir(skill))))
+    console.print(printable(report_mod.render_report(report_mod.build_report(skill_dir(skill)))))
 
 
 if __name__ == "__main__":

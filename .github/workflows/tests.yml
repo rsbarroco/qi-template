@@ -7,11 +7,15 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11", "3.12"]
+        # Windows is not an afterthought here: the eval baseline is recorded on the QA
+        # engineer's machine, which is Windows. A suite that is only green on Linux says
+        # nothing about the run that produces the data.
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
 
@@ -27,6 +31,7 @@ jobs:
         run: python -m pytest -q --junitxml=reports/junit.xml
 
       - name: Eval cases must be able to fail on the untouched fixture
+        shell: bash
         run: |
           for suite in $(python -c "from tests.test_evals_suites import suites; print(' '.join(suites()))"); do
             echo "--- $suite"
@@ -36,5 +41,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: junit-${{ matrix.python-version }}
+          name: junit-${{ matrix.os }}-${{ matrix.python-version }}
           path: reports/junit.xml
