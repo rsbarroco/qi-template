@@ -53,11 +53,40 @@ stack gets generated.
 ### Options
 
 ```
-qi [OUTPUT_DIR] [--dry-run]
+qi [OUTPUT_DIR] [--dry-run] [--config qi.json]
 
   OUTPUT_DIR    Where to create the project (default: ./<project-slug>)
   --dry-run     Print the file list without writing any files
+  --config, -c  Answer the questions from a JSON file instead of the menus (CI, demos)
 ```
+
+### Non-interactive mode
+
+```bash
+qi my-project-tests --config qi.json
+```
+
+```json
+{
+  "project_name": "Acme Shop QA",
+  "tracker": "jira",
+  "tracker_project_key": "SHOP",
+  "doc_platform": "confluence",
+  "sql_dbs": ["postgresql"],
+  "ui_web": true,
+  "ui_mobile_android": true,
+  "ui_mobile_framework": "appium",
+  "test_framework": "playwright",
+  "performance": "k6",
+  "cloud": "aws",
+  "ci": "github_actions"
+}
+```
+
+Keys are the fields of `qi/config.py`; values are the ones the menus use (`jira`,
+`github_issues`, `postgresql`, `espresso_xcuitest`, …). Anything omitted keeps its default
+(`none`, empty list, `false`); `project_slug` is derived from the name. A wrong key or
+value fails once with the whole list of problems, so a CI run never half-generates.
 
 ---
 

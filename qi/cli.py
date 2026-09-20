@@ -1,8 +1,10 @@
+import json
 from pathlib import Path
 import typer
 from rich.console import Console
 from rich.panel import Panel
 
+from qi.config import config_from_dict
 from qi.prompts import ask
 from qi.generator import generate
 
@@ -25,6 +27,13 @@ def main(
         "--dry-run",
         help="Print what would be generated without writing any files.",
     ),
+    config_file: Path = typer.Option(
+        None,
+        "--config",
+        "-c",
+        help="Answer the questions from a JSON file instead of the menus (CI, demos). "
+             "Keys are the Config fields; values are the same the menus use.",
+    ),
 ) -> None:
     console.print(
         Panel.fit(
@@ -34,7 +43,14 @@ def main(
         )
     )
 
-    config = ask()
+    if config_file is not None:
+        try:
+            config = config_from_dict(json.loads(config_file.read_text(encoding="utf-8")))
+        except (OSError, ValueError) as exc:
+            console.print(f"[bold red]Cannot use {config_file}:[/bold red] {exc}")
+            raise typer.Exit(code=2)
+    else:
+        config = ask()
 
     target = output_dir or Path(config.project_slug)
 
