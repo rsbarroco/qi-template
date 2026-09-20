@@ -22,7 +22,7 @@ def _run(run_id="happy-path-1", case="happy-path", passed=True, cost=0.5, dry=Fa
 
 def _write_runs(skill_dir: Path, runs: list[dict]) -> None:
     skill_dir.mkdir(parents=True, exist_ok=True)
-    (skill_dir / "runs.jsonl").write_text("".join(json.dumps(r) + "\n" for r in runs))
+    (skill_dir / "runs.jsonl").write_text("".join(json.dumps(r) + "\n" for r in runs), encoding="utf-8")
 
 
 def test_read_jsonl_missing_file_is_empty(tmp_path):
@@ -31,7 +31,7 @@ def test_read_jsonl_missing_file_is_empty(tmp_path):
 
 def test_read_jsonl_skips_blank_lines(tmp_path):
     p = tmp_path / "a.jsonl"
-    p.write_text('{"a": 1}\n\n{"a": 2}\n')
+    p.write_text('{"a": 1}\n\n{"a": 2}\n', encoding="utf-8")
     assert [r["a"] for r in read_jsonl(p)] == [1, 2]
 
 

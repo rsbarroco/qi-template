@@ -2,6 +2,7 @@
 import json
 import os
 import stat
+import sys
 from pathlib import Path
 
 import pytest
@@ -19,7 +20,7 @@ ticket = next(w for w in query.replace("(", " ").replace(")", " ").split() if w.
 subprocess.run([sys.executable, "scripts/qa_track.py", "start", "--ticket", ticket, "--title", "fake",
                 "--sprint", "26-09", "--basis", "ac", "--activity", "qa"], check=True)
 os.makedirs("qa/dossiers", exist_ok=True)
-with open(f"qa/dossiers/{ticket}.md", "w") as fh:
+with open(f"qa/dossiers/{ticket}.md", "w", encoding="utf-8") as fh:
     fh.write(f"# Dossier — {ticket}\n\n| Item | Found in | Followed? |\n|---|---|---|\n| PR #42 | ticket | yes |\n")
 answer = "| AC | Status |\n|---|---|\n| AC1 | ❌ |\n| AC2 | ❌ |\n\nScenario: draft\n\nWaiting for approval."
 print(json.dumps({"type": "result", "result": answer, "total_cost_usd": 0.42,
@@ -40,11 +41,26 @@ def isolated_runs(tmp_path, monkeypatch):
     return skill_copy
 
 
+def install_fake_claude(directory: Path) -> Path:
+    """Write the fake `claude` into `directory` and return something exec'able here.
+
+    POSIX runs the script itself, on the shebang. Windows cannot exec an extensionless
+    script at all, so it gets a `.cmd` shim next to the source — the same shape as the
+    real CLI, which installs as `claude.CMD`.
+    """
+    script = directory / "fake-claude.py"
+    script.write_text(FAKE_CLAUDE, encoding="utf-8")
+    if os.name != "nt":
+        script.chmod(script.stat().st_mode | stat.S_IXUSR)
+        return script
+    shim = directory / "fake-claude.cmd"
+    shim.write_text(f'@echo off\r\n"{sys.executable}" "{script}" %*\r\n', encoding="utf-8")
+    return shim
+
+
 @pytest.fixture
 def fake_claude(tmp_path, monkeypatch):
-    bin_path = tmp_path / "fake-claude"
-    bin_path.write_text(FAKE_CLAUDE)
-    bin_path.chmod(bin_path.stat().st_mode | stat.S_IXUSR)
+    bin_path = install_fake_claude(tmp_path)
     monkeypatch.setenv("QI_EVAL_CLAUDE_BIN", str(bin_path))
     return bin_path
 
@@ -80,7 +96,7 @@ def test_run_case_with_fake_claude_records_cost_and_grades(isolated_runs, fake_c
     assert names["no tests written before approval"] is True
     assert rec["all_graders_passed"] is True
     # persisted
-    lines = (isolated_runs / "runs.jsonl").read_text().splitlines()
+    lines = (isolated_runs / "runs.jsonl").read_text(encoding="utf-8").splitlines()
     assert len(lines) == 1 and json.loads(lines[0])["run_id"] == rec["run_id"]
     assert (Path(rec["run_dir"]) / "run.json").exists()
 

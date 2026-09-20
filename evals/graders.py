@@ -28,11 +28,18 @@ class GraderResult:
 
 
 def snapshot(root: Path) -> dict[str, str]:
-    """Hash every file under root (excluding .git) so graders can detect change."""
+    """Hash every file under root (excluding .git) so graders can detect change.
+
+    Keys are POSIX-style relative paths on every platform. The case files spell their
+    prefixes with `/`, so a Windows-native key (`tests\\b.spec.ts`) would silently match
+    no prefix: `dir_unchanged` and `only_changed_under` would report "no changes" over a
+    directory the agent had rewritten. The baseline is run on the QA engineer's Windows
+    machine, so that failure mode is the normal case, not the exotic one.
+    """
     out: dict[str, str] = {}
     for p in sorted(root.rglob("*")):
         if p.is_file() and ".git" not in p.parts:
-            out[str(p.relative_to(root))] = hashlib.sha256(p.read_bytes()).hexdigest()
+            out[p.relative_to(root).as_posix()] = hashlib.sha256(p.read_bytes()).hexdigest()
     return out
 
 
@@ -83,7 +90,7 @@ def json_field_equals(state: RunState, cfg: dict) -> GraderResult:
     if not p.exists():
         return GraderResult(name, False, "file missing")
     try:
-        value = json.loads(p.read_text()).get(cfg["field"])
+        value = json.loads(p.read_text(encoding="utf-8")).get(cfg["field"])
     except json.JSONDecodeError as e:
         return GraderResult(name, False, f"invalid json: {e}")
     return GraderResult(name, value == cfg["value"], f"{cfg['field']}={value!r}")
@@ -104,7 +111,7 @@ def file_matches(state: RunState, cfg: dict) -> GraderResult:
     name = cfg.get("name", f"file_matches:{cfg['path']}:{cfg['pattern']}")
     if not p.exists():
         return GraderResult(name, False, "file missing")
-    ok = re.search(cfg["pattern"], p.read_text(errors="replace"), re.IGNORECASE | re.MULTILINE) is not None
+    ok = re.search(cfg["pattern"], p.read_text(encoding="utf-8", errors="replace"), re.IGNORECASE | re.MULTILINE) is not None
     return GraderResult(name, ok, cfg["pattern"])
 
 
@@ -115,7 +122,7 @@ def file_not_matches(state: RunState, cfg: dict) -> GraderResult:
     name = cfg.get("name", f"file_not_matches:{cfg['path']}:{cfg['pattern']}")
     if not p.exists():
         return GraderResult(name, False, "file missing")
-    m = re.search(cfg["pattern"], p.read_text(errors="replace"), re.IGNORECASE | re.MULTILINE)
+    m = re.search(cfg["pattern"], p.read_text(encoding="utf-8", errors="replace"), re.IGNORECASE | re.MULTILINE)
     return GraderResult(name, m is None, f"found {m.group(0)!r}" if m else cfg["pattern"])
 
 

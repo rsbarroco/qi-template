@@ -18,7 +18,8 @@ def hook(project: Path, name: str, payload: dict, env: dict | None = None) -> su
     full_env = {k: v for k, v in os.environ.items() if k not in {"QI_PHASE", "QI_AUTONOMY_OVERRIDE"}}
     full_env.update({"CLAUDE_PROJECT_DIR": str(project), **(env or {})})
     return subprocess.run([sys.executable, str(project / ".claude/hooks" / name)],
-                          input=json.dumps(payload), capture_output=True, text=True, cwd=project, env=full_env)
+                          input=json.dumps(payload), capture_output=True, text=True, cwd=project, env=full_env,
+                          encoding="utf-8", errors="replace")
 
 
 def edit(path: str) -> dict:
@@ -37,7 +38,7 @@ def project(render) -> Path:
 # --- wiring -------------------------------------------------------------------------------
 
 def test_settings_json_wires_the_three_hooks(project):
-    settings = json.loads((project / ".claude/settings.json").read_text())
+    settings = json.loads((project / ".claude/settings.json").read_text(encoding="utf-8"))
     commands = [h["command"] for group in settings["hooks"].values() for entry in group for h in entry["hooks"]]
     assert len(commands) == 3
     for name in HOOKS:
@@ -49,7 +50,8 @@ def test_settings_json_wires_the_three_hooks(project):
 @pytest.mark.parametrize("name", HOOKS)
 def test_each_hook_passes_its_own_self_test(project, name):
     out = subprocess.run([sys.executable, str(project / ".claude/hooks" / name), "--self-test"],
-                         capture_output=True, text=True, cwd=project)
+                         capture_output=True, text=True, cwd=project,
+                         encoding="utf-8", errors="replace")
     assert out.returncode == 0, out.stderr
     assert "self-test ok" in out.stdout
 
@@ -57,7 +59,9 @@ def test_each_hook_passes_its_own_self_test(project, name):
 @pytest.mark.parametrize("name", HOOKS)
 def test_garbage_input_never_blocks(project, name):
     out = subprocess.run([sys.executable, str(project / ".claude/hooks" / name)], input="not json",
-                         capture_output=True, text=True, cwd=project, env={**os.environ, "CLAUDE_PROJECT_DIR": str(project)})
+                         capture_output=True, text=True, cwd=project,
+                         env={**os.environ, "CLAUDE_PROJECT_DIR": str(project)},
+                         encoding="utf-8", errors="replace")
     assert out.returncode == 0, out.stderr
 
 
@@ -117,7 +121,7 @@ def test_guard_bash_forbidden_commands(project, command, blocked):
 
 
 def test_merge_is_refused_at_the_generated_level_and_allowed_with_a_session_override(project):
-    assert json.loads((project / ".claude/autonomy.json").read_text())["tasks"]["merge-pr"] == 0
+    assert json.loads((project / ".claude/autonomy.json").read_text(encoding="utf-8"))["tasks"]["merge-pr"] == 0
     out = hook(project, "guard_bash.py", bash("gh pr merge 12 --squash"))
     assert out.returncode == 2 and '"merge-pr" is 0' in out.stderr and "needs 3" in out.stderr
     out = hook(project, "guard_bash.py", bash("gh pr merge 12 --squash"), env={"QI_AUTONOMY_OVERRIDE": "merge-pr=3"})
@@ -125,13 +129,13 @@ def test_merge_is_refused_at_the_generated_level_and_allowed_with_a_session_over
 
 
 def test_gates_are_read_from_autonomy_json(project):
-    cfg = json.loads((project / ".claude/autonomy.json").read_text())
+    cfg = json.loads((project / ".claude/autonomy.json").read_text(encoding="utf-8"))
     cfg["gates"].append({"pattern": r"\bdeploy\s+staging\b", "task": "execute-on-staging", "needs": 2})
-    (project / ".claude/autonomy.json").write_text(json.dumps(cfg))
+    (project / ".claude/autonomy.json").write_text(json.dumps(cfg), encoding="utf-8")
     out = hook(project, "guard_bash.py", bash("make deploy staging"))
     assert out.returncode == 2 and '"execute-on-staging" is 1' in out.stderr
     cfg["tasks"]["execute-on-staging"] = 2
-    (project / ".claude/autonomy.json").write_text(json.dumps(cfg))
+    (project / ".claude/autonomy.json").write_text(json.dumps(cfg), encoding="utf-8")
     assert hook(project, "guard_bash.py", bash("make deploy staging")).returncode == 0
 
 
@@ -160,28 +164,28 @@ def repo(project) -> Path:
 
 
 def test_stop_gate_blocks_when_a_spec_changed_and_coverage_is_stale(repo):
-    (repo / "specs/checkout.md").write_text(SPEC)
+    (repo / "specs/checkout.md").write_text(SPEC, encoding="utf-8")
     out = hook(repo, "stop_gate.py", {"stop_hook_active": False})
     assert out.returncode == 2
     assert "COVERAGE.md is stale" in out.stderr and "coverage_report.py" in out.stderr
 
 
 def test_stop_gate_allows_once_coverage_is_regenerated(repo):
-    (repo / "specs/checkout.md").write_text(SPEC)
+    (repo / "specs/checkout.md").write_text(SPEC, encoding="utf-8")
     subprocess.run([sys.executable, "scripts/coverage_report.py"], cwd=repo, check=True, capture_output=True)
     assert hook(repo, "stop_gate.py", {}).returncode == 0
 
 
 def test_stop_gate_ignores_changes_outside_specs(repo):
-    (repo / "README.md").write_text("changed\n")
+    (repo / "README.md").write_text("changed\n", encoding="utf-8")
     assert hook(repo, "stop_gate.py", {}).returncode == 0
 
 
 def test_stop_gate_never_blocks_twice(repo):
-    (repo / "specs/checkout.md").write_text(SPEC)
+    (repo / "specs/checkout.md").write_text(SPEC, encoding="utf-8")
     assert hook(repo, "stop_gate.py", {"stop_hook_active": True}).returncode == 0
 
 
 def test_stop_gate_allows_outside_a_git_repo(project):
-    (project / "specs/checkout.md").write_text(SPEC)
+    (project / "specs/checkout.md").write_text(SPEC, encoding="utf-8")
     assert hook(project, "stop_gate.py", {}).returncode == 0

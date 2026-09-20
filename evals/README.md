@@ -93,6 +93,10 @@ python -m evals label ticket-intake               # walk through unlabeled runs
 python -m evals report ticket-intake              # pass rates, cost, human agreement
 ```
 
+The runner execs whatever `QI_EVAL_CLAUDE_BIN` names, defaulting to `claude`, and resolves
+it through `PATH` and (on Windows) `PATHEXT` — the CLI installs as `claude.CMD` there, and
+an unresolved name raises `FileNotFoundError` before a single case runs.
+
 ## Reading a report
 
 | Column | Meaning |

@@ -31,6 +31,27 @@ STATUS_AUTOMATED = {"✅"}
 STATUS_PARTIAL = {"⚠️"}
 STATUS_MANUAL = {"❌"}
 
+# What to print instead of a mark the console cannot encode. Spec files are always read
+# as UTF-8, so the marks above are matched whatever the console is; only printing degrades.
+ASCII_FALLBACK = {"✅": "[auto]", "⚠️": "[partial]", "❌": "[manual]", "—": "-"}
+
+
+def printable(text: str) -> str:
+    """`text`, with any mark the console cannot encode swapped for an ASCII stand-in.
+
+    A Windows console is cp1252 or cp437, and neither has U+274C. Printing it there
+    raises UnicodeEncodeError, so the gate would exit on a traceback instead of on its
+    verdict — and the traceback looks nothing like a coverage failure.
+    """
+    try:
+        text.encode(sys.stdout.encoding or "ascii")
+        return text
+    except (UnicodeEncodeError, LookupError):
+        for mark, plain in ASCII_FALLBACK.items():
+            text = text.replace(mark, plain)
+        return text.encode("ascii", "replace").decode("ascii")
+
+
 # Documentation that lives next to the specs but is not a spec. Its example tables must
 # never be counted as coverage.
 NON_SPEC_FILES = {"README.MD", "TEMPLATE.MD"}
@@ -81,7 +102,7 @@ def main() -> None:
     pct = round(totals["auto"] / total_cases * 100) if total_cases > 0 else 0
 
     # Print summary
-    print(f"\nCoverage summary — {{ project_name }}")
+    print(printable(f"\nCoverage summary — {{ project_name }}"))
     print(f"  Total cases : {total_cases}")
     print(f"  Automated   : {totals['auto']} ({pct}%)")
     print(f"  Partial     : {totals['partial']}")
@@ -116,7 +137,8 @@ def main() -> None:
             print(f"  COVERAGE.md updated: {total_cases} total / {totals['auto']} automated / {pct}%")
 
     if args.check and totals["manual"] > 0:
-        print(f"\n[coverage_report] {totals['manual']} manual-only cases remain (❌). CI gate active.")
+        print(printable(f"\n[coverage_report] {totals['manual']} manual-only cases remain (❌). "
+                        "CI gate active."))
         sys.exit(1)
 
 

@@ -39,7 +39,9 @@ def _cfg(**over) -> Config:
 
 
 def _files(root: Path) -> set[str]:
-    return {str(p.relative_to(root)) for p in root.rglob("*") if p.is_file()}
+    # as_posix(), not str(): the sets above are spelled with "/", and on Windows a native
+    # separator turns every membership check into a silent miss.
+    return {p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()}
 
 
 # --- when is the pipeline generated -------------------------------------------------------
@@ -82,7 +84,7 @@ def test_simple_mode_has_no_agents(tmp_path):
 
 def test_comm_platform_adds_broadcast_skill_with_channel(tmp_path):
     generate(_cfg(comm_platform="slack", comm_platform_channel="#qa-alerts"), tmp_path)
-    text = (tmp_path / ".claude/skills/comm-broadcast/SKILL.md").read_text()
+    text = (tmp_path / ".claude/skills/comm-broadcast/SKILL.md").read_text(encoding="utf-8")
     assert "Slack" in text and "#qa-alerts" in text and "notify-only" in text.lower()
 
 
@@ -105,10 +107,10 @@ def test_execution_path_rule_only_for_web_ui(tmp_path, web, present):
 
 def test_watch_candidates_is_always_generated(tmp_path):
     generate(_cfg(tracker="none", doc_platform="none"), tmp_path)
-    text = (tmp_path / "WATCH_CANDIDATES.md").read_text()
+    text = (tmp_path / "WATCH_CANDIDATES.md").read_text(encoding="utf-8")
     assert "the project tracker" in text
     generate(_cfg(), tmp_path / "jira")
-    assert "Jira" in (tmp_path / "jira" / "WATCH_CANDIDATES.md").read_text()
+    assert "Jira" in (tmp_path / "jira" / "WATCH_CANDIDATES.md").read_text(encoding="utf-8")
 
 
 # --- generated code and config ------------------------------------------------------------
@@ -116,7 +118,7 @@ def test_watch_candidates_is_always_generated(tmp_path):
 def test_nosql_script_is_generated_per_store_and_compiles(tmp_path):
     generate(_cfg(nosql_dbs=["mongodb", "redis"]), tmp_path)
     script = tmp_path / "scripts/nosql_query.py"
-    text = script.read_text()
+    text = script.read_text(encoding="utf-8")
     assert "def query_mongodb" in text and "def query_redis" in text
     assert "def query_dynamodb" not in text and "firestore" not in text
     assert "_check_env" in text and "MONGODB_URI" in text
@@ -131,7 +133,7 @@ def test_no_nosql_no_script(tmp_path):
 def test_jenkinsfile_declares_a_credential_per_store(tmp_path):
     generate(_cfg(ci="jenkins", sql_dbs=["postgresql", "mssql"], nosql_dbs=["redis"], comm_platform="teams",
                   comm_platform_channel="QA"), tmp_path)
-    text = (tmp_path / "Jenkinsfile").read_text()
+    text = (tmp_path / "Jenkinsfile").read_text(encoding="utf-8")
     assert text.startswith("pipeline {")
     for line in ("POSTGRESQL_URL = credentials('qa-postgresql-url')", "MSSQL_URL = credentials('qa-mssql-url')",
                  "REDIS_URI = credentials('qa-redis-uri')", "COMM_WEBHOOK = credentials('qa-teams-webhook')"):
@@ -146,7 +148,7 @@ def test_jenkinsfile_declares_a_credential_per_store(tmp_path):
 ])
 def test_requirements_follow_the_framework(tmp_path, framework, expect, absent):
     generate(_cfg(test_framework=framework, ui_web=True), tmp_path)
-    text = (tmp_path / "requirements.txt").read_text()
+    text = (tmp_path / "requirements.txt").read_text(encoding="utf-8")
     for e in expect:
         assert e in text, e
     for a in absent:
@@ -155,7 +157,7 @@ def test_requirements_follow_the_framework(tmp_path, framework, expect, absent):
 
 def test_requirements_add_db_drivers(tmp_path):
     generate(_cfg(sql_dbs=["postgresql", "mssql"], nosql_dbs=["mongodb"]), tmp_path)
-    text = (tmp_path / "requirements.txt").read_text()
+    text = (tmp_path / "requirements.txt").read_text(encoding="utf-8")
     assert "psycopg2-binary" in text and "pyodbc" in text and "pymongo" in text
     assert "mysql-connector" not in text
 
@@ -173,7 +175,7 @@ def test_new_context_labels(field, value, key, expect):
 # --- agents ---------------------------------------------------------------------------------
 
 def _frontmatter(path: Path) -> dict:
-    text = path.read_text()
+    text = path.read_text(encoding="utf-8")
     assert text.startswith("---\n"), path
     block = text.split("---\n")[1]
     return yaml.safe_load(block)
@@ -192,7 +194,7 @@ def test_every_agent_has_valid_frontmatter_named_after_its_file(tmp_path):
 def test_every_agent_speaks_the_handoff_contract(tmp_path):
     generate(_cfg(test_repo="testrail", test_repo_project_key="2"), tmp_path)
     for path in (tmp_path / ".claude/agents").glob("*.md"):
-        text = path.read_text()
+        text = path.read_text(encoding="utf-8")
         assert '"ticket_key"' in text and '"routing"' in text, path.name
 
 
@@ -200,7 +202,7 @@ def test_every_agent_speaks_the_handoff_contract(tmp_path):
 
 def test_pipeline_claude_md_probes_the_dossier_before_any_sub_agent(tmp_path):
     generate(_cfg(), tmp_path)
-    claude = (tmp_path / "CLAUDE.md").read_text()
+    claude = (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
     assert "Phase-derivation table" in claude
     assert "## 00. Ticket intake" not in claude            # simple-mode section is not rendered
     table = claude[claude.index("Phase-derivation table"):claude.index("## 0. Pre-flight")]
@@ -212,13 +214,13 @@ def test_pipeline_claude_md_probes_the_dossier_before_any_sub_agent(tmp_path):
 
 def test_simple_claude_md_keeps_the_intake_section(tmp_path):
     generate(_cfg(tracker="none", doc_platform="none"), tmp_path)
-    claude = (tmp_path / "CLAUDE.md").read_text()
+    claude = (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
     assert "## 00. Ticket intake" in claude and "Phase-derivation table" not in claude
 
 
 def test_test_design_agent_reads_the_dossier_not_the_raw_ticket(tmp_path):
     generate(_cfg(), tmp_path)
-    text = (tmp_path / ".claude/agents/test-design-agent.md").read_text()
+    text = (tmp_path / ".claude/agents/test-design-agent.md").read_text(encoding="utf-8")
     assert '"dossier_path"' in text
     assert "qa/dossiers/" in text
     assert "requirements found outside the acs" in text.lower()
@@ -226,5 +228,5 @@ def test_test_design_agent_reads_the_dossier_not_the_raw_ticket(tmp_path):
 
 def test_handoff_contract_carries_the_dossier_path(tmp_path):
     generate(_cfg(), tmp_path)
-    text = (tmp_path / ".claude/skills/handoff-protocol/SKILL.md").read_text()
+    text = (tmp_path / ".claude/skills/handoff-protocol/SKILL.md").read_text(encoding="utf-8")
     assert '"dossier_path"' in text and "REQUIRED" in text.split('"dossier_path"')[1].split("\n")[0]

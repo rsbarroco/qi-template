@@ -19,7 +19,7 @@ def is_agent(label: dict) -> bool:
 def read_jsonl(path: Path) -> list[dict]:
     if not path.exists():
         return []
-    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
 def unlabeled_runs(skill_dir: Path) -> list[dict]:
@@ -40,7 +40,7 @@ def append_label(skill_dir: Path, run_id: str, verdict: str, critique: str, labe
         "labeler": labeler,
         "at": datetime.now(timezone.utc).isoformat(),
     }
-    with (skill_dir / "labels.jsonl").open("a") as fh:
+    with (skill_dir / "labels.jsonl").open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(label, ensure_ascii=False) + "\n")
     return label
 

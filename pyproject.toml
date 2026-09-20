@@ -7,7 +7,10 @@ name = "qi"
 version = "0.1.0"
 description = "Quality Intelligence — scaffold AI-assisted QA projects in seconds"
 readme = "README.md"
-requires-python = ">=3.11"
+# 3.10, not 3.11: PEP 604 (`str | None` in a typer signature, resolved at runtime) is the
+# newest thing we use, and it landed in 3.10. The QA engineer's machine runs 3.10.6, and
+# a floor they cannot install is a floor that keeps the eval baseline from being recorded.
+requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
 dependencies = [

@@ -20,12 +20,13 @@ def qa_track(tmp_path, monkeypatch):
     script = project / "scripts" / "qa_track.py"
 
     def run(*args: str, expect_fail: bool = False) -> subprocess.CompletedProcess:
-        proc = subprocess.run([sys.executable, str(script), *args], capture_output=True, text=True)
+        proc = subprocess.run([sys.executable, str(script), *args], capture_output=True, text=True,
+                              encoding="utf-8", errors="replace")
         assert (proc.returncode != 0) is expect_fail, proc.stdout + proc.stderr
         return proc
 
     def record(ticket: str) -> dict:
-        return json.loads((activity / f"{ticket}.json").read_text())
+        return json.loads((activity / f"{ticket}.json").read_text(encoding="utf-8"))
 
     return run, record
 

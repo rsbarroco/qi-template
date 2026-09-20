@@ -62,7 +62,7 @@ def _write_config(tmp_path, **over):
             "ui_web": True, "test_framework": "playwright", "ci": "github_actions"}
     data.update(over)
     path = tmp_path / "qi.json"
-    path.write_text(json.dumps(data))
+    path.write_text(json.dumps(data), encoding="utf-8")
     return path
 
 
@@ -72,7 +72,7 @@ def test_config_file_generates_without_asking(tmp_path, monkeypatch):
     target = tmp_path / "out"
     result = runner.invoke(cli.app, [str(target), "--config", str(_write_config(tmp_path))])
     assert result.exit_code == 0, result.output
-    assert (target / "CLAUDE.md").exists() and "Jira" in (target / "CLAUDE.md").read_text()
+    assert (target / "CLAUDE.md").exists() and "Jira" in (target / "CLAUDE.md").read_text(encoding="utf-8")
     assert (target / ".github/workflows/tests.yml").exists()
 
 

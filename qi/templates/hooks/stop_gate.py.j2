@@ -17,7 +17,8 @@ SPEC_OR_COVERAGE = re.compile(r"^(specs/.*\.md|COVERAGE\.md)$")
 
 def changed_files(root: Path) -> list[str]:
     try:
-        status = subprocess.run(["git", "status", "--porcelain"], cwd=root, capture_output=True, text=True)
+        status = subprocess.run(["git", "status", "--porcelain"], cwd=root, capture_output=True,
+                                text=True, encoding="utf-8", errors="replace")
     except OSError:
         return []
     if status.returncode != 0:
@@ -34,7 +35,8 @@ def decide(payload: dict, env: dict) -> str | None:
     checker = root / "scripts" / "coverage_report.py"
     if not checker.exists():
         return None
-    result = subprocess.run([sys.executable, str(checker), "--verify"], cwd=root, capture_output=True, text=True)
+    result = subprocess.run([sys.executable, str(checker), "--verify"], cwd=root, capture_output=True,
+                            text=True, encoding="utf-8", errors="replace")
     if result.returncode != 0:
         tail = (result.stdout + result.stderr).strip()[-400:]
         return ("a spec changed but COVERAGE.md is stale. Run: python scripts/coverage_report.py, "

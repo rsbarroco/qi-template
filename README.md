@@ -183,6 +183,10 @@ the corresponding Jinja2 template in [`qi/templates/`](qi/templates/).
 
 ## Development
 
+Python 3.10 or newer, on Linux, macOS or Windows. CI runs the suite on Linux and Windows
+across 3.10–3.12: the eval baseline is recorded on the QA engineer's Windows machine, so a
+suite that is green only on Linux proves nothing about the run that produces the data.
+
 ```bash
 git clone https://github.com/rsbarroco/qi-template
 cd qi-template

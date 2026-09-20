@@ -34,7 +34,7 @@ def test_there_is_at_least_one_suite():
 
 @pytest.mark.parametrize("skill", suites())
 def test_fixture_builds_a_real_config(skill):
-    data = json.loads((runner.skill_dir(skill) / "fixture.json").read_text())
+    data = json.loads((runner.skill_dir(skill) / "fixture.json").read_text(encoding="utf-8"))
     cfg = Config(**data)                       # unknown keys would raise here
     assert cfg.project_name and cfg.project_slug
 

@@ -12,8 +12,8 @@ def _state(tmp_path: Path, answer: str = "") -> RunState:
     project = tmp_path / "project"
     activity = tmp_path / "activity"
     (project / "tests").mkdir(parents=True)
-    (project / "tests" / "a.spec.ts").write_text("test")
-    (project / "COVERAGE.md").write_text("| 0 | 0 | 0% |")
+    (project / "tests" / "a.spec.ts").write_text("test", encoding="utf-8")
+    (project / "COVERAGE.md").write_text("| 0 | 0 | 0% |", encoding="utf-8")
     activity.mkdir()
     return RunState(project=project, activity_dir=activity, baseline=snapshot(project), answer=answer)
 
@@ -22,13 +22,13 @@ def test_file_exists_resolves_activity_prefix(tmp_path):
     st = _state(tmp_path)
     spec = [{"type": "file_exists", "path": "$ACTIVITY/SHOP-1.json"}]
     assert grade(st, spec)[0].passed is False
-    (st.activity_dir / "SHOP-1.json").write_text("{}")
+    (st.activity_dir / "SHOP-1.json").write_text("{}", encoding="utf-8")
     assert grade(st, spec)[0].passed is True
 
 
 def test_json_field_equals(tmp_path):
     st = _state(tmp_path)
-    (st.activity_dir / "SHOP-1.json").write_text(json.dumps({"sprint": "26-09"}))
+    (st.activity_dir / "SHOP-1.json").write_text(json.dumps({"sprint": "26-09"}), encoding="utf-8")
     spec = [{"type": "json_field_equals", "path": "$ACTIVITY/SHOP-1.json", "field": "sprint", "value": "26-09"}]
     assert grade(st, spec)[0].passed
     spec[0]["value"] = "26-10"
@@ -39,13 +39,13 @@ def test_dir_unchanged_detects_added_modified_and_removed(tmp_path):
     st = _state(tmp_path)
     spec = [{"type": "dir_unchanged", "path": "tests"}]
     assert grade(st, spec)[0].passed
-    (st.project / "tests" / "b.spec.ts").write_text("new")
+    (st.project / "tests" / "b.spec.ts").write_text("new", encoding="utf-8")
     r = grade(st, spec)[0]
     assert not r.passed and "tests/b.spec.ts" in r.detail
     (st.project / "tests" / "b.spec.ts").unlink()
-    (st.project / "tests" / "a.spec.ts").write_text("changed")
+    (st.project / "tests" / "a.spec.ts").write_text("changed", encoding="utf-8")
     assert not grade(st, spec)[0].passed
-    (st.project / "tests" / "a.spec.ts").write_text("test")
+    (st.project / "tests" / "a.spec.ts").write_text("test", encoding="utf-8")
     (st.project / "tests" / "a.spec.ts").unlink()
     assert not grade(st, spec)[0].passed
 
@@ -54,17 +54,17 @@ def test_dir_unchanged_works_for_a_single_file(tmp_path):
     st = _state(tmp_path)
     spec = [{"type": "dir_unchanged", "path": "COVERAGE.md"}]
     assert grade(st, spec)[0].passed
-    (st.project / "COVERAGE.md").write_text("| 1 | 1 | 100% |")
+    (st.project / "COVERAGE.md").write_text("| 1 | 1 | 100% |", encoding="utf-8")
     assert not grade(st, spec)[0].passed
 
 
 def test_only_changed_under_flags_out_of_scope_edits(tmp_path):
     st = _state(tmp_path)
     (st.project / "specs").mkdir()
-    (st.project / "specs" / "x.md").write_text("x")
+    (st.project / "specs" / "x.md").write_text("x", encoding="utf-8")
     spec = [{"type": "only_changed_under", "paths": ["specs"]}]
     assert grade(st, spec)[0].passed
-    (st.project / "tests" / "a.spec.ts").write_text("oops")
+    (st.project / "tests" / "a.spec.ts").write_text("oops", encoding="utf-8")
     r = grade(st, spec)[0]
     assert not r.passed and "tests/a.spec.ts" in r.detail
 
@@ -100,11 +100,11 @@ def test_file_matches_and_not_matches_require_the_file(tmp_path):
     assert not grade(st, spec_yes)[0].passed
     assert not grade(st, spec_no)[0].passed
     (st.project / "qa" / "dossiers").mkdir(parents=True)
-    (st.project / "qa" / "dossiers" / "X.md").write_text("SHOP-101 ok\nSHOP-205 NOT FOUND\n")
+    (st.project / "qa" / "dossiers" / "X.md").write_text("SHOP-101 ok\nSHOP-205 NOT FOUND\n", encoding="utf-8")
     assert grade(st, spec_yes)[0].passed
     r = grade(st, spec_no)[0]
     assert not r.passed and "SHOP-205" in r.detail
-    (st.project / "qa" / "dossiers" / "X.md").write_text("SHOP-101 only\n")
+    (st.project / "qa" / "dossiers" / "X.md").write_text("SHOP-101 only\n", encoding="utf-8")
     assert grade(st, spec_no)[0].passed
 
 
@@ -113,7 +113,7 @@ def test_file_matches_and_not_matches_require_the_file(tmp_path):
 def _clarification_pattern() -> str:
     import json
     from evals.runner import skill_dir
-    case = json.loads((skill_dir("ticket-intake") / "cases" / "ambiguous-ticket.json").read_text())
+    case = json.loads((skill_dir("ticket-intake") / "cases" / "ambiguous-ticket.json").read_text(encoding="utf-8"))
     return next(g["pattern"] for g in case["graders"] if g["name"] == "asks for clarification")
 
 
