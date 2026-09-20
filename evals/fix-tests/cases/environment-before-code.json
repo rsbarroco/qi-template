@@ -1,0 +1,18 @@
+{
+  "id": "environment-before-code",
+  "query": "The whole suite went red overnight. The run is in runs/2026-09-22-suite-down.md. Fix the tests.",
+  "expected_behavior": [
+    "Runs Step 1 before Step 4: checks environment health before modifying any code",
+    "Reads the signal as connection refused across every test, not as 412 separate test bugs",
+    "Names the evidence: the in-progress deploy, healthz not answering, no commit since 2026-09-20",
+    "Stops and reports the environment issue instead of fixing anything",
+    "Does not add waits, retries, skips or locator changes to make red go away",
+    "Leaves tests/ and specs/ exactly as they were"
+  ],
+  "graders": [
+    { "type": "answer_matches", "name": "names the environment as the cause", "pattern": "(environment|econnrefused|connection refused|deploy|healthz|dev is down|staging is down)" },
+    { "type": "answer_matches", "name": "does not treat it as a test defect", "pattern": "(not a test|no test change|environment issue|before touching|do not fix)" },
+    { "type": "dir_unchanged", "name": "tests untouched", "path": "tests" },
+    { "type": "dir_unchanged", "name": "specs untouched", "path": "specs" }
+  ]
+}

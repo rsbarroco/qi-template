@@ -89,3 +89,20 @@ def test_report_after_runs_and_labels(isolated):
 def test_unknown_skill_is_an_error(isolated):
     result = cli.invoke(evals_cli.app, ["report", "does-not-exist"])
     assert result.exit_code != 0
+
+
+@pytest.mark.parametrize("encoding, expected", [
+    ("utf-8", ("\u2713", "\u2717")),
+    ("UTF-8", ("\u2713", "\u2717")),
+    ("cp1252", ("+", "x")),          # the Windows console the baseline is run on
+    ("ascii", ("+", "x")),
+    (None, ("+", "x")),              # a stream that does not report an encoding
+    ("not-a-codec", ("+", "x")),
+])
+def test_grader_marks_never_exceed_what_the_console_can_print(encoding, expected):
+    marks = evals_cli.grader_marks(encoding)
+    assert marks == expected
+    if encoding in (None, "not-a-codec"):
+        return
+    for mark in marks:
+        mark.encode(encoding)   # would raise if the mark could not be printed

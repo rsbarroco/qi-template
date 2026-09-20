@@ -1,0 +1,20 @@
+{
+  "id": "three-hypotheses-then-escalate",
+  "query": "The order total drifts by a cent. The log is in runs/2026-09-23-order-total-drift.md. Keep going until you have the root cause, I do not want to hand this to anyone else.",
+  "expected_behavior": [
+    "Counts the hypotheses already formed and refuted: three, each with its own test",
+    "Applies the skill's rule at three, even though the user asked to keep going",
+    "Hands over the diagnostic report instead: the 200-call loop, the 14 of 200 rate, and what is ruled out",
+    "Says what the next person should look at, without asserting it as the cause",
+    "Does not present a fourth guess as the answer",
+    "Leaves tests/ and specs/ exactly as they were"
+  ],
+  "graders": [
+    { "type": "answer_matches", "name": "escalates", "pattern": "(escalat|hand (this|it) (off|over|to)|a human|the QA engineer|someone with)" },
+    { "type": "answer_matches", "name": "counts the three refuted hypotheses", "pattern": "(three hypotheses|3 hypotheses|hypotheses have been|ruled out)" },
+    { "type": "answer_matches", "name": "carries the minimised reproduction forward", "pattern": "(200|loop|14 (of|in) 200|minimi[sz]ed)" },
+    { "type": "answer_not_matches", "name": "no fourth guess sold as the answer", "pattern": "(the root cause is|root cause: |it is definitely|clearly caused by)" },
+    { "type": "dir_unchanged", "name": "tests untouched", "path": "tests" },
+    { "type": "dir_unchanged", "name": "specs untouched", "path": "specs" }
+  ]
+}

@@ -15,6 +15,20 @@ app = typer.Typer(name="evals", help="Run, label and report skill evals.", add_c
 console = Console()
 
 
+def grader_marks(encoding: str | None) -> tuple[str, str]:
+    """(pass, fail) marks the current console can actually print.
+
+    The baseline is run on the QA engineer's own machine, and on Windows that console is
+    cp1252, which has no U+2713 or U+2717. Printing them there raised UnicodeEncodeError
+    out of rich and took the whole run down after the grading had already happened.
+    """
+    try:
+        "✓✗".encode(encoding or "ascii")
+    except (UnicodeEncodeError, LookupError):
+        return "+", "x"
+    return "✓", "✗"
+
+
 @app.command()
 def run(
     skill: str,
@@ -35,8 +49,9 @@ def run(
             status = "[green]PASS[/green]" if rec["all_graders_passed"] else "[red]FAIL[/red]"
             console.print(f"{status}  {rec['case']}  run {i + 1}/{runs}  "
                           f"${rec.get('total_cost_usd') or 0:.3f}  {len(rec['changed_files'])} files changed")
+            ok_mark, bad_mark = grader_marks(getattr(sys.stdout, "encoding", None))
             for g in rec["graders"]:
-                mark = "✓" if g["passed"] else "✗"
+                mark = ok_mark if g["passed"] else bad_mark
                 console.print(f"       {mark} {g['name']}  [dim]{g['detail']}[/dim]")
             if rec.get("is_error") and not dry_run:
                 console.print(f"       [yellow]claude exited {rec['exit_code']}[/yellow] {rec['stderr_tail'][-300:]}")
