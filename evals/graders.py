@@ -28,11 +28,18 @@ class GraderResult:
 
 
 def snapshot(root: Path) -> dict[str, str]:
-    """Hash every file under root (excluding .git) so graders can detect change."""
+    """Hash every file under root (excluding .git) so graders can detect change.
+
+    Keys are POSIX-style relative paths on every platform. The case files spell their
+    prefixes with `/`, so a Windows-native key (`tests\\b.spec.ts`) would silently match
+    no prefix: `dir_unchanged` and `only_changed_under` would report "no changes" over a
+    directory the agent had rewritten. The baseline is run on the QA engineer's Windows
+    machine, so that failure mode is the normal case, not the exotic one.
+    """
     out: dict[str, str] = {}
     for p in sorted(root.rglob("*")):
         if p.is_file() and ".git" not in p.parts:
-            out[str(p.relative_to(root))] = hashlib.sha256(p.read_bytes()).hexdigest()
+            out[p.relative_to(root).as_posix()] = hashlib.sha256(p.read_bytes()).hexdigest()
     return out
 
 

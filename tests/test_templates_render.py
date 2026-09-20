@@ -28,7 +28,7 @@ def test_every_tracker_ci_combination_renders_without_jinja_leftovers(tmp_path, 
                   queues=["sqs"], performance="k6", ui_mobile_ios=True), tmp_path)
     for path in tmp_path.rglob("*"):
         if path.is_file():
-            text = path.read_text()
+            text = path.read_text(encoding="utf-8")
             assert not UNRENDERED.search(text), f"unrendered jinja in {path.relative_to(tmp_path)}"
             assert text.strip(), f"empty output {path.relative_to(tmp_path)}"
 
@@ -36,27 +36,27 @@ def test_every_tracker_ci_combination_renders_without_jinja_leftovers(tmp_path, 
 def test_list_files_matches_what_generate_writes(tmp_path):
     cfg = _cfg(ui_web=True, ci="github_actions", sql_dbs=["mysql"])
     generate(cfg, tmp_path)
-    written = sorted(str(p.relative_to(tmp_path)) for p in tmp_path.rglob("*") if p.is_file())
+    written = sorted(p.relative_to(tmp_path).as_posix() for p in tmp_path.rglob("*") if p.is_file())
     assert written == sorted(list_files(cfg))
 
 
 @pytest.mark.parametrize("ci, path", [("github_actions", ".github/workflows/tests.yml"), ("gitlab_ci", ".gitlab-ci.yml")])
 def test_ci_files_are_valid_yaml(tmp_path, ci, path):
     generate(_cfg(ci=ci, ui_web=True, sql_dbs=["postgresql", "mssql"], nosql_dbs=["mongodb"]), tmp_path)
-    data = yaml.safe_load((tmp_path / path).read_text())
+    data = yaml.safe_load((tmp_path / path).read_text(encoding="utf-8"))
     assert isinstance(data, dict) and data
 
 
 def test_github_actions_uses_secrets_syntax_not_jinja(tmp_path):
     generate(_cfg(ci="github_actions", sql_dbs=["postgresql"]), tmp_path)
-    text = (tmp_path / ".github/workflows/tests.yml").read_text()
+    text = (tmp_path / ".github/workflows/tests.yml").read_text(encoding="utf-8")
     assert "${{ secrets.APP_USER }}" in text
     assert "POSTGRESQL_URL" in text
 
 
 def test_every_skill_named_in_claude_md_exists(tmp_path):
     generate(_cfg(ui_web=True, sql_dbs=["postgresql"], cloud="gcp", queues=["kafka"], performance="locust"), tmp_path)
-    claude = (tmp_path / "CLAUDE.md").read_text()
+    claude = (tmp_path / "CLAUDE.md").read_text(encoding="utf-8")
     for name in re.findall(r"`([a-z-]+)` skill", claude):
         assert (tmp_path / ".claude/skills" / name / "SKILL.md").exists(), name
 
@@ -83,4 +83,4 @@ def test_context_passes_unknown_values_through_unchanged():
 
 def test_prerequisites_mentions_mssql_driver_when_mssql_selected(tmp_path):
     generate(_cfg(sql_dbs=["mssql"]), tmp_path)
-    assert "ODBC" in (tmp_path / "PREREQUISITES.md").read_text()
+    assert "ODBC" in (tmp_path / "PREREQUISITES.md").read_text(encoding="utf-8")
