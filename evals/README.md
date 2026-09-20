@@ -29,6 +29,15 @@ evals/<skill>/
    dangling ticket link as `NOT FOUND`? A grader is code; it does not judge prose.
 4. The run is appended to `runs.jsonl`. A human labels it later.
 
+## Who may label
+
+`labeler` is recorded on every label. A labeler that starts with `agent:` is an **agent
+label**: it is counted and shown in its own column, never in the `human` or `agree`
+columns, and it never moves the run toward the 30 that unlock the LLM judge. An agent
+grading a run produced by the same constitution is evidence about the graders, not a
+verdict about the agent. The promotion rule in the generated `AUTONOMY.md` reads the
+human column only.
+
 ## Why humans label the first 30 runs
 
 Code graders catch mechanics. They cannot tell whether the agent *asserted without
@@ -57,6 +66,7 @@ python -m evals report ticket-intake              # pass rates, cost, human agre
 | graders | share of runs where every code grader passed |
 | human | share of labeled runs marked `pass` |
 | agree | share of labeled runs where graders and human agree; low agreement means the graders miss what you care about, so write a new grader, not a new rule |
+| agent | share of `agent:`-labeled runs marked pass; informational, never part of `human` or `agree` |
 | cost | mean `total_cost_usd` per run as reported by `claude -p` |
 
 ## Rules for writing a case
@@ -77,3 +87,15 @@ python -m evals report ticket-intake              # pass rates, cost, human agre
   the file because `CLAUDE.md` told it to. The `ticket-intake` evals measure how often
   that actually happens. Fixing the layout is a separate change; this harness is how we
   will know the fix worked.
+
+## A recorded run is never re-graded
+
+`runs.jsonl` keeps the grader verdicts as they stood when the run happened. When a grader
+is later widened or replaced, the old rows stay as they are and the new grader applies
+from the next run: rewriting history would erase the disagreement that justified the
+change. The 2026-09-20 baseline is the worked example — `asks for clarification` missed an
+answer that asked in a numbered list with no question mark, so the pattern grew two
+alternatives (`open questions?`, `acceptance criteria: none`) and gained a negative
+control in `tests/test_evals_graders.py` proving it still fails an answer that invents the
+acceptance criteria.
+
