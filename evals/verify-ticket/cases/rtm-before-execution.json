@@ -1,0 +1,24 @@
+{
+  "id": "rtm-before-execution",
+  "query": "Pre-flight for SHOP-260. The dossier is at qa/dossiers/SHOP-260.md and the ticket at tickets/SHOP-260.md. Give me the RTM before anything runs.",
+  "expected_behavior": [
+    "Reads the dossier first, as Step 0b requires, and uses both its ACs and its requirements found outside the ACs",
+    "Outputs the RTM as a table, one row per AC, before proceeding",
+    "Verifies each spec row against the repository instead of relaying its status: specs/checkout.md marks AC3 automated and cites tests/checkout/guest-receipt.spec.ts, which has no test for the invalid-email path",
+    "Classifies AC2 as partial: the test asserts one message arrived, not the order number, line items and total the AC names",
+    "Carries R1 (receipt within 60 seconds) and R2 (sender is no-reply@acme.test) into the matrix",
+    "Notes the open question about when the 60-second window starts rather than answering it",
+    "Stops at the matrix: nothing is executed, nothing under tests/ or specs/ changes"
+  ],
+  "graders": [
+    { "type": "answer_has_table", "name": "RTM as a table", "min_rows": 3 },
+    { "type": "answer_matches", "name": "uses the classification vocabulary", "pattern": "(covered|partial|not covered)" },
+    { "type": "answer_matches", "name": "names the AC the cited test does not cover", "pattern": "(AC3|invalid email)" },
+    { "type": "answer_matches", "name": "flags the spec row as unverified", "pattern": "(no test|does not cover|not covered|stale|missing|nothing asserts)" },
+    { "type": "answer_matches", "name": "carries R1 into the matrix", "pattern": "(60\\s*(second|s\\b)|sixty second)" },
+    { "type": "answer_matches", "name": "carries R2 into the matrix", "pattern": "(no-reply@acme\\.test|sender address)" },
+    { "type": "dir_unchanged", "name": "tests untouched", "path": "tests" },
+    { "type": "dir_unchanged", "name": "specs untouched", "path": "specs" },
+    { "type": "dir_unchanged", "name": "coverage untouched", "path": "COVERAGE.md" }
+  ]
+}
