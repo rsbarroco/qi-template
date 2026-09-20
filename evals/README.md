@@ -33,7 +33,8 @@ in a query actually ships in `seed/`, so a case cannot quietly point the agent a
 
 ## Which skills get a suite
 
-Suites today: `ticket-intake`, `gap-analysis`, `report-bug`, `fix-tests`, `diagnose`.
+Suites today: `ticket-intake`, `gap-analysis`, `report-bug`, `fix-tests`, `diagnose`,
+`verify-ticket`.
 
 A skill gets a suite when its work is visible in the final state of the run: a file
 written, a file deliberately left alone, or an answer that carries the argument. Seven
@@ -46,8 +47,8 @@ depend on them stay at their level, until the runner grows real fixtures.
 `docs/decisions/0001-a-skill-gets-an-eval-suite-when-its-work-lands-on-disk.md` is the
 decision and what it costs.
 
-Still to write, and gradable today: `verify-ticket`, `sprint-report`, `json-schema`,
-`bdd-writer`, `convention-check`, `discovery`, `handoff-protocol`.
+Still to write, and gradable today: `sprint-report`, `json-schema`, `bdd-writer`,
+`convention-check`, `discovery`, `handoff-protocol`.
 
 1. The runner renders `fixture.json` with the real generator into `evals/.runs/…/project/`,
    copies `seed/` on top, and commits it as the baseline.
