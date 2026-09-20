@@ -14,8 +14,6 @@ HEREDOC = re.compile(r"<<-?\s*['\"]?(\w+)['\"]?[\s\S]*?\n\1(?=\n|$)")
 QUOTED = re.compile(r'"(?:[^"\\]|\\.)*"|\'[^\']*\'')
 
 FORBIDDEN = [
-    (re.compile(r"\bgit\s+push\b[^|;&]*\s(--force(-with-lease)?|-f)\b"), "never force-push (CLAUDE.md 0a)"),
-    (re.compile(r"\bgit\s+push\b[^|;&]*\s(origin\s+)?(main|master)(\s|$)"), "never push straight to main; open a PR from a branch"),
     (re.compile(r"\bgit\s+commit\b[^|;&]*--no-verify"), "--no-verify skips the commit hooks; fix the hook failure instead"),
     (re.compile(r"\bgit\b[^|;&]*-c\s*core\.hooksPath\b|HUSKY=0|\bhusky\s+uninstall\b"), "bypassing the git hooks is the same as --no-verify; fix the hook failure instead"),
     (re.compile(r"(cat|less|more|head|tail|bat|grep|sed|awk|printenv|echo\s+\$)\b[^|;&]*\.env(\.local|\.(?!example\b)[a-z]+)?\b(?!\.example)|\.env\.local"), "never read or print secrets (.env, tokens, keys)"),
@@ -32,11 +30,33 @@ def surface(raw: str) -> str:
     return QUOTED.sub('""', HEREDOC.sub("<<HEREDOC", raw))
 
 
+# `git push` with any options between git and push (git -c x=y push), force via flag or
+# via a `+refspec`, and main/master as the destination of any refspec (HEAD:main, feat:main).
+PUSH = re.compile(r"\bgit\b[^|;&]*?\bpush\b([^|;&]*)")
+PUSH_FORCE = re.compile(r"\s(--force(-with-lease)?|-f)\b|\s\+\S")
+PUSH_MAIN = re.compile(r"(\s|:)(main|master)(\s|$)")
+
+
+def push_verdict(cmd: str) -> str | None:
+    m = PUSH.search(cmd)
+    if not m:
+        return None
+    args = m.group(1)
+    if PUSH_FORCE.search(args):
+        return "never force-push, by flag or by +refspec (CLAUDE.md 0a)"
+    if PUSH_MAIN.search(args):
+        return "never push straight to main, not even as a refspec destination; open a PR from a branch"
+    return None
+
+
 def decide(payload: dict, env: dict) -> str | None:
     raw = str((payload.get("tool_input") or {}).get("command") or "")
     if not raw.strip():
         return None
     cmd = surface(raw)
+    verdict = push_verdict(cmd)
+    if verdict:
+        return verdict
     for pattern, why in FORBIDDEN:
         if pattern.search(cmd):
             return why
@@ -61,6 +81,11 @@ SELF_TEST = [
     ({"tool_input": {"command": "git push -f"}}, {}, True),
     ({"tool_input": {"command": "git push origin main"}}, {}, True),
     ({"tool_input": {"command": "git push -u origin feat/x"}}, {}, False),
+    ({"tool_input": {"command": "git -c x=y push -f origin feat/x"}}, {}, True),
+    ({"tool_input": {"command": "git push origin +feat/x"}}, {}, True),
+    ({"tool_input": {"command": "git push origin HEAD:main"}}, {}, True),
+    ({"tool_input": {"command": "git push origin feat/x:master"}}, {}, True),
+    ({"tool_input": {"command": "git push origin HEAD:refs/heads/feat/x"}}, {}, False),
     ({"tool_input": {"command": "git commit --no-verify -m x"}}, {}, True),
     ({"tool_input": {"command": "git commit -m 'never git push --force again'"}}, {}, False),
     ({"tool_input": {"command": "cat .env"}}, {}, True),
