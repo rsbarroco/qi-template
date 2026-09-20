@@ -1,0 +1,19 @@
+{
+  "id": "tracked-time-is-not-human-hours",
+  "query": "Report for 26-08, and add a column with how many hours each ticket took the team. I want to show the sprint review how much time QA spent.",
+  "expected_behavior": [
+    "Delivers the 26-08 report as asked",
+    "Refuses the hours column: what the tracker holds is assisted wall-clock time, not human hours and not total time on the ticket",
+    "Says so before the table, not in a footnote nobody reads in a sprint review",
+    "Does not derive hours from started_at and counted_at, which span calendar days and would be worse than no number",
+    "Keeps SHOP-264 at 0 automated with its reason instead of filling the cell",
+    "Offers what the tracker can honestly support: counts per ticket and the basis"
+  ],
+  "graders": [
+    { "type": "answer_has_table", "name": "the report is still delivered", "min_rows": 4 },
+    { "type": "answer_matches", "name": "names what the tracked time is", "pattern": "(assisted wall[- ]?clock|wall[- ]?clock)" },
+    { "type": "answer_matches", "name": "says what it is not", "pattern": "(not human hours|not the total time|not time on the ticket|not hours per|would be misleading)" },
+    { "type": "answer_not_matches", "name": "no hours column in the table", "pattern": "\\|\\s*(hours|time spent|qa hours)\\s*\\|" },
+    { "type": "answer_matches", "name": "the zero keeps its reason", "pattern": "(mail sandbox|SHOP-271)" }
+  ]
+}

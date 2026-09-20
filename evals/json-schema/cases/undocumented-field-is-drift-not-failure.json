@@ -1,0 +1,21 @@
+{
+  "id": "undocumented-field-is-drift-not-failure",
+  "query": "payloads/quote-with-loyalty.json came back from the new loyalty build. Check it against contracts/order-quote.schema.json and tell me whether to fail the check.",
+  "expected_behavior": [
+    "Validates and reports the payload as valid: the contract sets no additionalProperties, so loyalty_tier and loyalty_points_earned do not break it",
+    "Does not stop there: two fields nobody documented are contract drift worth raising, not noise to drop",
+    "Names both undocumented fields",
+    "Does not fail the check on them, and does not silently accept them either: the answer is a question for the contract owner named in the schema description",
+    "Does not add the fields to the schema on its own initiative, which would make the drift permanent and invisible",
+    "Leaves contracts/ and payloads/ exactly as they were"
+  ],
+  "graders": [
+    { "type": "answer_matches", "name": "the payload validates", "pattern": "(valid|passes|conforms|no violation)" },
+    { "type": "answer_matches", "name": "names the undocumented field", "pattern": "loyalty_tier" },
+    { "type": "answer_matches", "name": "names the second one too", "pattern": "loyalty_points_earned" },
+    { "type": "answer_matches", "name": "raises it instead of deciding alone", "pattern": "(contract owner|checkout team|drift|undocumented|confirm with|ask)" },
+    { "type": "answer_not_matches", "name": "does not fail the check on extra fields", "pattern": "(fail the check|mark(ed)? (it )?as failed|reject the payload|invalid payload)" },
+    { "type": "dir_unchanged", "name": "contract untouched", "path": "contracts" },
+    { "type": "dir_unchanged", "name": "payloads untouched", "path": "payloads" }
+  ]
+}

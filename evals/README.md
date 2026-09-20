@@ -13,6 +13,7 @@ documentation**. Three cases per skill, a baseline run, then iterate.
 evals/<skill>/
   fixture.json         Config used to render a throwaway project with the generator
   seed/                Files copied on top of the rendered project (tickets, specs, tests)
+  seed-activity/       Records copied into QI_ACTIVITY_DIR, for skills that read the tracker
   cases/<case>.json    id + kind + query + expected behaviour + code graders
   runs.jsonl           one line per run (cost, duration, turns, grader results)
   labels.jsonl         one line per human verdict (pass/fail + one-sentence critique)
@@ -29,12 +30,13 @@ three happy paths measures fluency, not judgement.
 
 The same file re-runs the anti-vacuous gate over every suite: each case must still have at
 least one grader failing on the untouched fixture. It also checks that any file path named
-in a query actually ships in `seed/`, so a case cannot quietly point the agent at nothing.
+in a query is really there when the agent reads it — copied in by `seed/` or written by the
+generator itself — so a case cannot quietly point the agent at nothing.
 
 ## Which skills get a suite
 
 Suites today: `ticket-intake`, `gap-analysis`, `report-bug`, `fix-tests`, `diagnose`,
-`verify-ticket`.
+`verify-ticket`, `sprint-report`, `json-schema`.
 
 A skill gets a suite when its work is visible in the final state of the run: a file
 written, a file deliberately left alone, or an answer that carries the argument. Seven
@@ -47,8 +49,8 @@ depend on them stay at their level, until the runner grows real fixtures.
 `docs/decisions/0001-a-skill-gets-an-eval-suite-when-its-work-lands-on-disk.md` is the
 decision and what it costs.
 
-Still to write, and gradable today: `sprint-report`, `json-schema`, `bdd-writer`,
-`convention-check`, `discovery`, `handoff-protocol`.
+Still to write, and gradable today: `bdd-writer`, `convention-check`, `discovery`,
+`handoff-protocol`.
 
 1. The runner renders `fixture.json` with the real generator into `evals/.runs/…/project/`,
    copies `seed/` on top, and commits it as the baseline.

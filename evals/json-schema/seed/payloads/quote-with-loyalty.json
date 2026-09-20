@@ -1,0 +1,13 @@
+{
+  "id": "q_2a6b0f41",
+  "status": "priced",
+  "subtotal_cents": 12000,
+  "tax_cents": 990,
+  "total_cents": 12990,
+  "items": [
+    { "sku": "ROCKET-SKATES", "qty": 1, "unit_cents": 12000 }
+  ],
+  "applied_promotions": [],
+  "loyalty_tier": "gold",
+  "loyalty_points_earned": 130
+}

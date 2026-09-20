@@ -1,0 +1,19 @@
+{
+  "id": "names-the-failing-field",
+  "query": "Validate payloads/quote-invalid.json against contracts/order-quote.schema.json and tell me exactly what is wrong with it.",
+  "expected_behavior": [
+    "Reports all three defects, not the first one and a stop: total_cents is required and absent, status is \"PRICED\" and the enum is lowercase, and items[0].qty is 0 against a minimum of 1",
+    "Gives the path to each failure, not just the message, so the API owner can find it",
+    "Says which rule each one breaks: required, enum, minimum",
+    "Does not edit the payload or the contract to make validation pass",
+    "Does not claim it ran a validator it could not run; reading both files and comparing is a valid answer here"
+  ],
+  "graders": [
+    { "type": "answer_matches", "name": "names the missing required field", "pattern": "total_cents" },
+    { "type": "answer_matches", "name": "names the enum violation", "pattern": "(PRICED|enum|status)" },
+    { "type": "answer_matches", "name": "names the quantity below the minimum", "pattern": "(qty|minimum)" },
+    { "type": "answer_matches", "name": "cites the rule, not only the value", "pattern": "(required|enum|minimum)" },
+    { "type": "dir_unchanged", "name": "contract untouched", "path": "contracts" },
+    { "type": "dir_unchanged", "name": "payloads untouched", "path": "payloads" }
+  ]
+}

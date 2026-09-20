@@ -16,6 +16,7 @@ import pytest
 from evals import runner
 from evals.graders import GRADERS
 from qi.config import Config
+from qi.generator import list_files
 
 MIN_CASES = 3
 
@@ -61,14 +62,20 @@ def test_every_case_is_complete_and_uses_known_graders(skill):
 
 
 @pytest.mark.parametrize("skill", suites())
-def test_seed_paths_referenced_by_a_query_exist(skill):
-    """A query that points the agent at a file the seed never ships tests nothing."""
+def test_paths_referenced_by_a_query_exist_in_the_rendered_fixture(skill):
+    """A query that points the agent at a file nothing ships tests nothing.
+
+    A case may name a file the seed copies in, or one the generator itself writes into
+    the fixture (`scripts/qa_track.py`, `COVERAGE.md`). Both are there when the agent
+    reads the query; a path from neither is a dead end the agent cannot follow.
+    """
     seed = runner.skill_dir(skill) / "seed"
+    generated = set(list_files(runner.load_fixture_config(skill)))
     for case in runner.load_cases(skill):
         for token in case["query"].replace("(", " ").replace(")", " ").split():
             candidate = token.rstrip(".,")
             if "/" in candidate and candidate.endswith((".md", ".json", ".ts", ".py")):
-                assert (seed / candidate).exists(), f"{skill}/{case['id']}: {candidate} not in seed/"
+                assert (seed / candidate).exists() or candidate in generated,                     f"{skill}/{case['id']}: {candidate} is neither in seed/ nor generated"
 
 
 @pytest.mark.parametrize("skill", suites())

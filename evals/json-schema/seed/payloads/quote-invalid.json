@@ -1,0 +1,10 @@
+{
+  "id": "q_9c1d7e33",
+  "status": "PRICED",
+  "subtotal_cents": 7500,
+  "tax_cents": 619,
+  "items": [
+    { "sku": "ANVIL-1", "qty": 0, "unit_cents": 2500 }
+  ],
+  "applied_promotions": []
+}
