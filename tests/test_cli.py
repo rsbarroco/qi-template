@@ -54,3 +54,43 @@ def test_next_steps_point_at_claude_md(tmp_path, monkeypatch):
     monkeypatch.setattr(cli, "ask", lambda: _cfg())
     result = runner.invoke(cli.app, [str(tmp_path / "p")])
     assert "read CLAUDE.md" in result.output
+
+
+def _write_config(tmp_path, **over):
+    import json
+    data = {"project_name": "Acme Shop QA", "tracker": "jira", "tracker_project_key": "SHOP",
+            "ui_web": True, "test_framework": "playwright", "ci": "github_actions"}
+    data.update(over)
+    path = tmp_path / "qi.json"
+    path.write_text(json.dumps(data))
+    return path
+
+
+def test_config_file_generates_without_asking(tmp_path, monkeypatch):
+    def never(): raise AssertionError("ask() must not be called with --config")
+    monkeypatch.setattr(cli, "ask", never)
+    target = tmp_path / "out"
+    result = runner.invoke(cli.app, [str(target), "--config", str(_write_config(tmp_path))])
+    assert result.exit_code == 0, result.output
+    assert (target / "CLAUDE.md").exists() and "Jira" in (target / "CLAUDE.md").read_text()
+    assert (target / ".github/workflows/tests.yml").exists()
+
+
+def test_config_file_default_output_dir_is_the_derived_slug(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(cli.app, ["--config", str(_write_config(tmp_path))])
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "acme-shop-qa" / "CLAUDE.md").exists()
+
+
+def test_invalid_config_file_fails_with_the_reasons(tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "ask", lambda: (_ for _ in ()).throw(AssertionError("no prompt")))
+    result = runner.invoke(cli.app, [str(tmp_path / "out"), "--config", str(_write_config(tmp_path, tracker="trello", extra=1))])
+    assert result.exit_code == 2
+    assert "tracker: 'trello'" in result.output and "unknown key 'extra'" in result.output
+    assert not (tmp_path / "out").exists()
+
+
+def test_missing_config_file_fails_cleanly(tmp_path):
+    result = runner.invoke(cli.app, [str(tmp_path / "out"), "--config", str(tmp_path / "nope.json")])
+    assert result.exit_code == 2 and "Cannot use" in result.output

@@ -88,3 +88,64 @@ class Config:
         return self.tracker != "none" and (
             self.doc_platform != "none" or self.test_repo != "none"
         )
+
+
+# Values the menus offer; a config file must use the same ones (qi/prompts.py).
+ALLOWED = {
+    "tracker": {"jira", "github_issues", "linear", "azure_devops", "none"},
+    "doc_platform": {"confluence", "notion", "github_wiki", "none"},
+    "test_repo": {"testrail", "zephyr", "xray", "azure_test_plans", "local_files", "none"},
+    "comm_platform": {"slack", "teams", "discord", "none"},
+    "sql_dbs": {"postgresql", "mysql", "sqlite", "mssql"},
+    "nosql_dbs": {"mongodb", "redis", "dynamodb", "firestore"},
+    "ui_mobile_framework": {"appium", "detox", "espresso_xcuitest"},
+    "test_framework": {"robot", "playwright", "pytest", "cypress", "jest", "webdriverio", "junit", "custom", "none"},
+    "performance": {"k6", "locust", "jmeter", "gatling", "artillery", "none"},
+    "cloud": {"aws", "gcp", "azure", "none"},
+    "queues": {"sqs", "pubsub", "kafka", "rabbitmq"},
+    "ci": {"github_actions", "gitlab_ci", "jenkins", "none"},
+}
+
+
+LIST_FIELDS = {"sql_dbs", "nosql_dbs", "queues"}
+
+
+def slugify(name: str) -> str:
+    import re
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+
+
+def config_from_dict(data: dict) -> Config:
+    """Build a Config from a JSON/dict answer set (the non-interactive path).
+
+    Unknown keys, wrong types and values the menus do not offer raise ValueError with
+    every problem listed, so a CI run fails once with the whole list.
+    """
+    from dataclasses import fields
+    known = {f.name: f for f in fields(Config)}
+    errors: list[str] = []
+    for key in data:
+        if key not in known:
+            errors.append(f"unknown key {key!r}")
+    if not str(data.get("project_name", "")).strip():
+        errors.append("project_name is required")
+    for key, allowed in ALLOWED.items():
+        if key not in data:
+            continue
+        value = data[key]
+        values = value if isinstance(value, list) else [value]
+        if key in LIST_FIELDS and not isinstance(value, list):
+            errors.append(f"{key} must be a list, got {value!r}")
+            continue
+        for v in values:
+            if v not in allowed:
+                errors.append(f"{key}: {v!r} is not one of {sorted(allowed)}")
+    for key in ("ui_web", "ui_mobile_ios", "ui_mobile_android"):
+        if key in data and not isinstance(data[key], bool):
+            errors.append(f"{key} must be true or false")
+    if errors:
+        raise ValueError("invalid config:\n  - " + "\n  - ".join(errors))
+    cfg = Config(**{k: v for k, v in data.items() if k in known})
+    if not cfg.project_slug:
+        cfg.project_slug = slugify(cfg.project_name)
+    return cfg
